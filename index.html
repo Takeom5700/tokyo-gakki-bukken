@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>東京 楽器可防音賃貸 物件検索</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif; background: #f0f2f5; color: #333; height: 100vh; display: flex; flex-direction: column; }
+
+header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+header h1 { font-size: 1.2rem; font-weight: 700; }
+.header-right { font-size: 0.75rem; opacity: 0.75; text-align: right; line-height: 1.5; }
+
+.sources { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 6px 20px; font-size: 0.72rem; color: #666; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
+.sources strong { color: #444; }
+.sources a { color: #0f3460; text-decoration: none; }
+.sources a:hover { text-decoration: underline; }
+
+.layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ── 左パネル ── */
+.left-panel { width: 420px; min-width: 360px; background: #fff; display: flex; flex-direction: column; border-right: 1px solid #ddd; overflow: hidden; }
+
+.filters { padding: 14px 16px; border-bottom: 1px solid #eee; background: #fafafa; flex-shrink: 0; }
+.filters h2 { font-size: 0.78rem; font-weight: 700; color: #0f3460; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+.filter-group { margin-bottom: 8px; }
+.filter-group label { display: block; font-size: 0.72rem; color: #666; margin-bottom: 3px; font-weight: 600; }
+.filter-group input, .filter-group select { width: 100%; padding: 7px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.83rem; outline: none; }
+.filter-group input:focus, .filter-group select:focus { border-color: #0f3460; }
+.filter-row { display: flex; gap: 8px; }
+.filter-row .filter-group { flex: 1; }
+.filter-actions { display: flex; gap: 6px; margin-top: 10px; }
+.btn { padding: 8px 14px; border: none; border-radius: 6px; font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-search { background: #0f3460; color: white; flex: 1; }
+.btn-search:hover { background: #1a4a7a; }
+.btn-search:disabled { background: #aaa; cursor: not-allowed; }
+.btn-reset { background: #f0f2f5; color: #555; }
+.btn-reset:hover { background: #e0e3e8; }
+.btn-csv { background: #27ae60; color: white; }
+.btn-csv:hover { background: #219a52; }
+.btn-csv:disabled { background: #aaa; cursor: not-allowed; }
+
+.result-header { padding: 8px 16px; border-bottom: 1px solid #eee; background: #fff; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
+.result-count { font-size: 0.78rem; color: #666; }
+.result-count strong { color: #0f3460; font-size: 0.95rem; }
+.sort-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.sort-btn { padding: 4px 10px; font-size: 0.72rem; border: 1px solid #ddd; border-radius: 12px; background: #f5f5f5; color: #555; cursor: pointer; font-weight: 600; transition: all 0.15s; }
+.sort-btn:hover { background: #e8edf5; border-color: #0f3460; }
+.sort-btn.active { background: #0f3460; color: white; border-color: #0f3460; }
+.site-status { display: flex; flex-wrap: wrap; gap: 4px; }
+.site-badge { font-size: 0.62rem; padding: 2px 6px; border-radius: 10px; font-weight: 600; }
+.site-ok { background: #d1fae5; color: #065f46; }
+.site-warn { background: #fef3c7; color: #92400e; }
+.site-err { background: #fee2e2; color: #991b1b; }
+
+.property-list { overflow-y: auto; flex: 1; padding: 10px; }
+
+.property-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.18s; }
+.property-card:hover { border-color: #0f3460; box-shadow: 0 3px 12px rgba(15,52,96,0.13); transform: translateY(-1px); }
+.property-card.active { border-color: #0f3460; background: #eef2f9; }
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.card-name { font-size: 0.88rem; font-weight: 700; color: #1a1a2e; flex: 1; line-height: 1.3; }
+.badge { font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; white-space: nowrap; margin-left: 8px; }
+.badge-24h { background: #fff3cd; color: #856404; }
+.badge-ok { background: #d1fae5; color: #065f46; }
+.badge-consult { background: #dbeafe; color: #1e40af; }
+.card-meta { font-size: 0.76rem; color: #666; margin-bottom: 5px; line-height: 1.6; }
+.card-rent { font-size: 1rem; font-weight: 700; color: #0f3460; margin-bottom: 5px; }
+.card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
+.tag { font-size: 0.65rem; padding: 2px 7px; border-radius: 4px; font-weight: 600; background: #f0f2f5; color: #555; }
+.tag-rc { background: #e8f4fd; color: #1565c0; }
+.tag-src { background: #fce4ec; color: #880e4f; }
+.tag-net { background: #e8f5e9; color: #2e7d32; }
+.transit-row { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; background: #f8f9fb; border-radius: 6px; padding: 5px 8px; margin-bottom: 5px; font-size: 0.73rem; color: #444; }
+.t-item { display: flex; align-items: center; gap: 2px; }
+.t-item b { color: #0f3460; }
+.t-sep { color: #ccc; font-size: 0.65rem; }
+.t-note { font-size: 0.6rem; color: #aaa; margin-left: 1px; }
+.t-map { margin-left: auto; font-size: 0.62rem; color: #0f3460; text-decoration: none; background: #e8eef7; padding: 2px 7px; border-radius: 4px; white-space: nowrap; font-weight: 600; }
+.t-map:hover { background: #d0ddf0; }
+.card-footer { display: flex; align-items: center; justify-content: space-between; }
+.card-source { font-size: 0.65rem; color: #aaa; }
+.btn-detail { font-size: 0.7rem; padding: 4px 10px; background: #0f3460; color: white; border-radius: 5px; text-decoration: none; font-weight: 600; }
+.btn-detail:hover { background: #1a4a7a; }
+
+/* ── 右パネル（地図）── */
+.right-panel { flex: 1; position: relative; }
+#map { width: 100%; height: 100%; }
+.map-controls { position: absolute; top: 10px; right: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; }
+.map-btn { background: white; border: 1px solid #ddd; border-radius: 7px; padding: 6px 12px; font-size: 0.75rem; cursor: pointer; font-weight: 600; color: #0f3460; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+.map-legend { position: absolute; bottom: 28px; left: 10px; z-index: 1000; background: white; border-radius: 8px; padding: 8px 12px; font-size: 0.7rem; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.map-legend div { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+.legend-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); flex-shrink: 0; }
+
+/* 全画面 */
+.fullscreen-map { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; z-index: 9999 !important; }
+.fullscreen-controls { position: fixed !important; top: 10px; right: 10px; z-index: 10000 !important; }
+.fullscreen-legend { position: fixed !important; bottom: 28px; left: 10px; z-index: 10000 !important; }
+
+/* ポップアップ */
+.popup-name { font-weight: 700; font-size: 0.88rem; margin-bottom: 3px; color: #1a1a2e; }
+.popup-sub { font-size: 0.75rem; color: #666; margin-bottom: 2px; }
+.popup-rent { font-size: 0.92rem; font-weight: 700; color: #0f3460; margin-bottom: 4px; }
+.popup-badge { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-bottom: 5px; }
+.popup-link { display: block; text-align: center; background: #0f3460; color: white; padding: 5px 8px; border-radius: 5px; text-decoration: none; font-size: 0.72rem; font-weight: 600; margin-top: 5px; }
+.popup-link:hover { background: #1a4a7a; }
+
+/* ローディングオーバーレイ */
+.loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15,52,96,0.88); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
+.loading-overlay.show { display: flex; }
+.spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.25); border-top-color: white; border-radius: 50%; animation: spin 0.9s linear infinite; margin-bottom: 18px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pin-pulse { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.2); opacity: 0; } }
+.loading-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; }
+.loading-site { font-size: 0.83rem; opacity: 0.8; margin-bottom: 14px; min-height: 20px; }
+.loading-bar { width: 260px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.loading-bar-fill { height: 100%; background: white; border-radius: 2px; width: 0; transition: width 0.35s ease; }
+.loading-note { font-size: 0.72rem; opacity: 0.55; }
+
+/* トースト */
+.toast { position: fixed; bottom: 22px; right: 22px; z-index: 99999; background: #1a1a2e; color: white; padding: 10px 18px; border-radius: 9px; font-size: 0.83rem; font-weight: 600; box-shadow: 0 4px 18px rgba(0,0,0,0.3); transform: translateY(80px); opacity: 0; transition: all 0.3s ease; pointer-events: none; }
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* 空状態 */
+.empty-state { text-align: center; padding: 40px 20px; color: #999; }
+.empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+@media (max-width: 768px) {
+  /* ヘッダー */
+  header h1 { font-size: 1rem; }
+  .header-right .sp-hide { display: none; }
+  /* sourcesバー非表示 */
+  .sources { display: none; }
+  /* レイアウト: 縦積み */
+  .layout { flex-direction: column; }
+  /* 地図: 上半分 */
+  .right-panel { order: 1; height: 45vh; flex-shrink: 0; }
+  #map { height: 100%; }
+  /* 左パネル: 下半分にスクロール可能リスト */
+  .left-panel { order: 2; width: 100%; min-width: 0; flex: 1; overflow: hidden; }
+  /* フィルターを折りたたみ */
+  .filters { padding: 8px 12px; }
+  .filters h2 { font-size: 0.72rem; margin-bottom: 6px; }
+  .filter-group label { font-size: 0.68rem; }
+  .filter-group input, .filter-group select { padding: 5px 8px; font-size: 0.78rem; }
+  .btn { padding: 7px 10px; font-size: 0.78rem; }
+  /* 結果リスト: 残り高さをフル活用 */
+  .property-list { flex: 1; overflow-y: auto; }
+  /* カードをコンパクトに */
+  .property-card { padding: 8px 10px; margin-bottom: 6px; }
+  .card-name { font-size: 0.82rem; }
+  .card-meta { font-size: 0.7rem; }
+  .card-rent { font-size: 0.9rem; }
+  .transit-row { font-size: 0.68rem; padding: 4px 6px; }
+  .card-tags { gap: 3px; margin-bottom: 5px; }
+  .tag { font-size: 0.6rem; padding: 1px 5px; }
+  .btn-detail { font-size: 0.65rem; padding: 3px 8px; }
+  .card-source { font-size: 0.6rem; }
+  /* 地図凡例・コントロール */
+  .map-legend { font-size: 0.62rem; padding: 5px 8px; }
+  .map-btn { font-size: 0.68rem; padding: 4px 8px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏠 東京楽器可物件検索</h1>
+  <div class="header-right">リアルタイム<span class="sp-hide">横断検索</span></div>
+</header>
+
+<div class="sources">
+  <strong>検索対象：</strong>
+  <a href="https://suumo.jp" target="_blank">SUUMO</a>
+  <a href="https://www.homes.co.jp" target="_blank">HOME'S</a>
+  <a href="https://www.chintai.net" target="_blank">CHINTAI</a>
+  <a href="https://www.musision.jp" target="_blank">ミュージション</a>
+  <a href="https://www.bouonchintai.com" target="_blank">防音賃貸.com</a>
+  <a href="https://estate.musicman.co.jp" target="_blank">Musicman不動産</a>
+  <span style="margin-left:8px;color:#999;border-left:1px solid #ddd;padding-left:10px;">⚠️ 検索結果は楽器演奏可能を保証するものではありません。必ず不動産会社に直接ご確認ください。</span>
+</div>
+
+<div class="layout">
+
+  <!-- 左パネル -->
+  <div class="left-panel">
+    <div class="filters">
+      <h2>🔍 検索条件</h2>
+      <div class="filter-group">
+        <label>駅名・エリア・ランドマーク</label>
+        <input type="text" id="keyword" placeholder="例：赤坂、六本木、茗荷谷、麻布台ヒルズ">
+      </div>
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>家賃 下限（万円）</label>
+          <input type="number" id="rentMin" placeholder="例：8" min="0" step="0.5">
+        </div>
+        <div class="filter-group">
+          <label>家賃 上限（万円）</label>
+          <input type="number" id="rentMax" placeholder="例：20" min="0" step="0.5">
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>構造</label>
+          <select id="structure">
+            <option value="">すべて</option>
+            <option value="RC">RC造</option>
+            <option value="SRC">SRC造</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>楽器条件（明記物件のみ絞込）</label>
+          <select id="instrument">
+            <option value="">すべて（RC/SRC含む）</option>
+            <option value="24h">24h演奏可</option>
+            <option value="楽器可">楽器可</option>
+            <option value="相談可">相談可</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-search" id="searchBtn" onclick="doSearch()">🔍 検索する</button>
+        <button class="btn btn-reset" onclick="resetAll()">リセット</button>
+        <button class="btn btn-csv" id="csvBtn" onclick="exportCSV()" disabled>📥 CSV</button>
+      </div>
+    </div>
+
+    <div class="result-header">
+      <div class="result-count">
+        <strong id="resultCount">—</strong> <span id="resultLabel">件　検索してください</span>
+      </div>
+      <div class="sort-btns" id="sortBtns" style="display:none;">
+        <button class="sort-btn active" data-sort="distance" onclick="setSort('distance')">📍 距離順</button>
+        <button class="sort-btn" data-sort="rent_asc" onclick="setSort('rent_asc')">💴 家賃↑</button>
+        <button class="sort-btn" data-sort="rent_desc" onclick="setSort('rent_desc')">💴 家賃↓</button>
+      </div>
+    </div>
+
+    <div class="property-list" id="propertyList">
+      <div class="empty-state">
+        <div class="icon">🏠</div>
+        <div>条件を入力して「検索する」を押してください</div>
+        <div style="font-size:0.75rem;margin-top:6px;color:#bbb;">SUUMO・HOME'S・ミュージションなどを横断検索します</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右パネル（地図） -->
+  <div class="right-panel" id="rightPanel">
+    <div id="map"></div>
+    <div class="map-controls" id="mapControls">
+      <button class="map-btn" onclick="toggleFullscreen()">⛶ 全画面</button>
+    </div>
+    <div class="map-legend" id="mapLegend">
+      <div><span class="legend-dot" style="background:#e74c3c"></span>24h演奏可</div>
+      <div><span class="legend-dot" style="background:#27ae60"></span>楽器可</div>
+      <div><span class="legend-dot" style="background:#0f3460"></span>相談可</div>
+    </div>
+  </div>
+</div>
+
+<!-- ローディング -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-title">🔍 物件を調査中...</div>
+  <div class="loading-site" id="loadingSite">SUUMO を検索中...</div>
+  <div class="loading-bar"><div class="loading-bar-fill" id="loadingBar"></div></div>
+  <div class="loading-note">複数サイトを並列横断検索しています。しばらくお待ちください。</div>
+  <!-- AdSense広告枠 (承認後にコメントを外して publisher IDを入れてください) -->
+  <!--
+  <div class="loading-ad">
+    <div style="font-size:0.65rem;color:rgba(255,255,255,0.5);margin-bottom:4px;">スポンサー</div>
+    <ins class="adsbygoogle"
+         style="display:block;width:320px;height:100px;"
+         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto">
+    </ins>
+  </div>
+  -->
+</div>
+
+<!-- トースト -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = 'https://tokyo-gakki-bukken.duckdns.org';
+const SITES = ['SUUMO を検索中...', "HOME'S を検索中...", 'ミュージション を検索中...', '防音賃貸.com を検索中...', 'Musicman不動産 を検索中...'];
+let centerMarker = null;
+
+let currentProperties = [];
+let markers = {};       // uid -> { marker, instrument }
+let hoveredId = null;
+let activeId = null;
+let map, markerLayer, isFullscreen = false;
+
+// ── 地図初期化 ──
+function initMap() {
+  map = L.map('map').setView([35.690, 139.730], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 18
+  }).addTo(map);
+  markerLayer = L.layerGroup().addTo(map);
+}
+
+// ── ユーティリティ ──
+// ── 所要時間の概算（東京都心の実測ベース速度）──
+function transitEstimate(dist_km) {
+  // バス+徒歩: バス停まで歩き+待ち8分 + 距離÷10km/h（都バス平均表定速度）
+  const bus = Math.round(8 + dist_km * 60 / 10);
+  // 電車+バス+徒歩: 乗換・ホーム移動6分 + 距離÷28km/h（電車平均表定速度）
+  const train = Math.round(6 + dist_km * 60 / 28);
+  return { bus, train };
+}
+
+function fmtRent(mn, mx) {
+  const f = v => (v / 10000).toFixed(1);
+  if (!mn || mn === 0) return '要問合せ';
+  return mn === mx ? `${f(mn)}万円` : `${f(mn)}〜${f(mx)}万円`;
+}
+function markerColor(ins) {
+  return ins === '24h演奏可' ? '#e74c3c' : ins === '楽器可' ? '#27ae60' : '#0f3460';
+}
+function makeMarkerHtml(ins, isHovered) {
+  const c = isHovered ? '#f39c12' : markerColor(ins);
+  const size = isHovered ? 32 : 20;
+  if (isHovered) {
+    return `<div style="position:relative;width:${size}px;height:${size}px;">
+      <div style="position:absolute;inset:0;background:rgba(243,156,18,0.35);border-radius:50%;animation:pin-pulse 0.8s ease-out infinite;"></div>
+      <div style="position:absolute;inset:4px;background:#f39c12;border:3px solid white;border-radius:50%;box-shadow:0 0 14px rgba(243,156,18,0.9),0 2px 8px rgba(0,0,0,0.5);"></div>
+    </div>`;
+  }
+  return `<div style="width:${size}px;height:${size}px;background:${c};border:3px solid white;border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,0.45);transition:all 0.15s;"></div>`;
+}
+function markerIcon(ins, isHovered = false) {
+  const size = isHovered ? 32 : 20;
+  return L.divIcon({ className: '', html: makeMarkerHtml(ins, isHovered), iconSize: [size, size], iconAnchor: [size/2, size/2], popupAnchor: [0, -size/2] });
+}
+function badgeHTML(ins) {
+  const cls = ins === '24h演奏可' ? 'badge-24h' : ins === '楽器可' ? 'badge-ok' : 'badge-consult';
+  const lbl = ins === '24h演奏可' ? '🎵 24h演奏可' : ins === '楽器可' ? '🎸 楽器可' : '🎹 相談可';
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+function badgeCls(ins) {
+  return ins === '24h演奏可' ? 'badge-24h' : ins === '楽器可' ? 'badge-ok' : 'badge-consult';
+}
+
+// ── 検索実行 ──
+async function doSearch() {
+  const keyword   = document.getElementById('keyword').value.trim();
+  const rentMinV  = parseFloat(document.getElementById('rentMin').value);
+  const rentMaxV  = parseFloat(document.getElementById('rentMax').value);
+  const structure = document.getElementById('structure').value;
+  const instrument = document.getElementById('instrument').value;
+
+  // ローディング開始
+  showLoading();
+  document.getElementById('searchBtn').disabled = true;
+  document.getElementById('csvBtn').disabled = true;
+
+  const params = new URLSearchParams();
+  if (keyword) params.set('keyword', keyword);
+  if (!isNaN(rentMaxV)) params.set('rent_max', Math.round(rentMaxV * 10000));
+  if (structure) params.set('structure', structure);
+  if (instrument) params.set('instrument', instrument);
+
+  let data;
+  try {
+    const res = await fetch(`${API_BASE}/api/search?${params}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    data = await res.json();
+  } catch (e) {
+    hideLoading();
+    document.getElementById('searchBtn').disabled = false;
+    showToast('❌ サーバーに接続できませんでした。start.bat でサーバーを起動してください。');
+    return;
+  }
+
+  // フロントエンド側で家賃下限フィルター
+  let props = data.properties;
+  if (!isNaN(rentMinV)) {
+    props = props.filter(p => p.rentMax >= rentMinV * 10000);
+  }
+
+  // 数値インデックスをuidとして付与（URLはHTML属性に埋め込めないため）
+  props.forEach((p, i) => { p._uid = i; });
+  currentProperties = props;
+  currentSort = 'distance';
+  hideLoading();
+  playNotification();
+  renderList(data.center);
+  renderMap(data.center);
+  document.getElementById('resultCount').textContent = props.length;
+  document.getElementById('resultLabel').textContent = '件の物件が見つかりました';
+  document.getElementById('searchBtn').disabled = false;
+  document.getElementById('csvBtn').disabled = props.length === 0;
+  document.getElementById('sortBtns').style.display = props.length > 0 ? 'flex' : 'none';
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === 'distance'));
+  showToast(`🏠 ${props.length} 件の物件が見つかりました！`);
+}
+
+let currentSort = 'distance';
+function setSort(type) {
+  currentSort = type;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === type));
+  const sorted = [...currentProperties];
+  if (type === 'rent_asc') sorted.sort((a, b) => (a.rentMin||a.rentMax||0) - (b.rentMin||b.rentMax||0));
+  else if (type === 'rent_desc') sorted.sort((a, b) => (b.rentMin||b.rentMax||0) - (a.rentMin||a.rentMax||0));
+  else sorted.sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999));
+  currentProperties = sorted;
+  renderList(null);
+}
+
+// ── ローディング ──
+let _siteInterval, _barInterval, _barPct = 0;
+function showLoading() {
+  const overlay = document.getElementById('loadingOverlay');
+  const siteEl  = document.getElementById('loadingSite');
+  const barEl   = document.getElementById('loadingBar');
+  overlay.classList.add('show');
+  _barPct = 0; barEl.style.width = '0';
+  let i = 0;
+  _siteInterval = setInterval(() => { siteEl.textContent = SITES[i++ % SITES.length]; }, 600);
+  _barInterval  = setInterval(() => { _barPct = Math.min(_barPct + 1.2, 90); barEl.style.width = _barPct + '%'; }, 100);
+}
+function hideLoading() {
+  clearInterval(_siteInterval); clearInterval(_barInterval);
+  document.getElementById('loadingBar').style.width = '100%';
+  setTimeout(() => document.getElementById('loadingOverlay').classList.remove('show'), 300);
+}
+
+// ── サイトステータスバッジ ──
+function renderSiteStatus(status) {
+  const el = document.getElementById('siteStatus');
+  el.innerHTML = Object.entries(status).map(([name, st]) => {
+    const cls = st === 'OK' ? 'site-ok' : st.includes('失敗') || st.includes('エラー') ? 'site-err' : 'site-warn';
+    const icon = st === 'OK' ? '✓' : '!';
+    return `<span class="site-badge ${cls}" title="${st}">${icon} ${name}</span>`;
+  }).join('');
+}
+
+// ── リスト描画 ──
+function renderList(center) {
+  const list = document.getElementById('propertyList');
+  if (currentProperties.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><div>条件に一致する物件が見つかりませんでした</div></div>';
+    return;
+  }
+  list.innerHTML = currentProperties.map(p => {
+    const uid  = p._uid;
+    const st   = (p.structure||'').includes('SRC') ? 'tag-src' : 'tag-rc';
+    const net  = p.internet === '無料' ? '<span class="tag tag-net">📶 ネット無料</span>' : '';
+    const size = p.size ? `<span class="tag">📐 ${p.size}</span>` : '';
+    const hasPin = (p.lat && p.lng) ? '<span style="color:#27ae60;font-size:0.7rem;margin-right:3px" title="地図にピンあり">📍</span>' : '';
+    const rentTxt = fmtRent(p.rentMin, p.rentMax);
+    let transitRow = '';
+    if (center && p.distance_km != null) {
+      const est = transitEstimate(p.distance_km);
+      const gmapUrl = `https://www.google.com/maps/dir/?api=1&origin=${center.lat},${center.lng}&destination=${p.lat},${p.lng}&travelmode=transit`;
+      transitRow = `<div class="transit-row">
+        <span class="t-item">📏 <b>${p.distance_km}km</b></span>
+        <span class="t-sep">|</span>
+        <span class="t-item">🚶 <b>約${p.walk_from_center}分</b></span>
+        <span class="t-sep">|</span>
+        <span class="t-item">🚌 <b>約${est.bus}分</b><span class="t-note">（推定）</span></span>
+        <span class="t-sep">|</span>
+        <span class="t-item">🚃 <b>約${est.train}分</b><span class="t-note">（推定）</span></span>
+        <a href="${gmapUrl}" target="_blank" rel="noopener" class="t-map" onclick="event.stopPropagation()">地図で確認</a>
+      </div>`;
+    }
+    return `<div class="property-card" data-uid="${uid}"
+        onclick="onCard(${uid})"
+        onmouseenter="onCardHover(${uid}, true)"
+        onmouseleave="onCardHover(${uid}, false)">
+      <div class="card-header"><div class="card-name">${hasPin}${p.name}</div>${badgeHTML(p.instrument)}</div>
+      <div class="card-meta">🚉 ${p.line ? p.line + ' ' : ''}${p.station}${p.walk ? ' 徒歩'+p.walk+'分' : ''}　${p.area}</div>
+      ${transitRow}
+      <div class="card-rent">${rentTxt}</div>
+      <div class="card-tags"><span class="tag ${st}">${p.structure||'RC造'}</span>${size}${net}</div>
+      <div class="card-footer"><span class="card-source">via ${p.source}</span><a href="${p.url}" target="_blank" rel="noopener" class="btn-detail" onclick="event.stopPropagation()">物件詳細を見る →</a></div>
+    </div>`;
+  }).join('');
+}
+
+// ── カードホバー → ピン強調 ──
+function onCardHover(uid, entering) {
+  if (uid === activeId) return;
+  if (entering) {
+    if (hoveredId && hoveredId !== uid) setMarkerHover(hoveredId, false);
+    hoveredId = uid;
+    setMarkerHover(uid, true);
+  } else {
+    hoveredId = null;
+    setMarkerHover(uid, false);
+  }
+}
+
+// ── 地図描画 ──
+function renderMap(center) {
+  markerLayer.clearLayers(); markers = {};
+  if (centerMarker) { centerMarker.remove(); centerMarker = null; }
+  const bounds = [];
+
+  // センターマーカー（検索場所）
+  if (center && center.lat && center.lng) {
+    const starIcon = L.divIcon({
+      className: '',
+      html: `<div style="width:32px;height:32px;background:#f39c12;border:3px solid white;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 10px rgba(0,0,0,0.5);">★</div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+      popupAnchor: [0, -18]
+    });
+    centerMarker = L.marker([center.lat, center.lng], { icon: starIcon, zIndexOffset: 2000 })
+      .bindPopup(`<div style="font-weight:700;font-size:0.88rem;">📍 検索地点：${center.keyword}</div><div style="font-size:0.75rem;color:#666;margin-top:2px;">徒歩1時間以内（約4.8km）で絞り込み</div>`)
+      .addTo(map);
+    bounds.push([center.lat, center.lng]);
+  }
+
+  currentProperties.forEach(p => {
+    if (!p.lat || !p.lng) return;
+    const uid = p._uid;
+    const distLine = (center && p.distance_km != null) ? `<div class="popup-sub">📏 ${p.distance_km}km（徒歩約${p.walk_from_center}分）</div>` : '';
+    const m = L.marker([p.lat, p.lng], { icon: markerIcon(p.instrument) });
+    m.bindPopup(`<div style="min-width:190px">
+      <div class="popup-name">${p.name}</div>
+      <div class="popup-sub">🚉 ${p.line||''} ${p.station}${p.walk ? ' 徒歩'+p.walk+'分' : ''}</div>
+      <div class="popup-sub">📍 ${p.area}</div>
+      ${distLine}
+      <div class="popup-rent">${fmtRent(p.rentMin, p.rentMax)}</div>
+      <span class="popup-badge ${badgeCls(p.instrument)}">${p.instrument}</span>
+      <a href="${p.url}" target="_blank" rel="noopener" class="popup-link">🔗 物件詳細を見る</a>
+    </div>`, { maxWidth: 240 });
+    m.on('click', () => { activateCard(uid); });
+    markerLayer.addLayer(m);
+    markers[uid] = { marker: m, instrument: p.instrument };
+    bounds.push([p.lat, p.lng]);
+  });
+  // ピンがある場合は地図をフィット
+  if (bounds.length > 0) {
+    try { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 }); } catch(e) {}
+  }
+}
+
+// ── ピンの色をホバー/通常に切り替え ──
+function setMarkerHover(uid, hovered) {
+  const entry = markers[uid];
+  if (!entry) return;
+  entry.marker.setIcon(markerIcon(entry.instrument, hovered));
+  if (hovered) entry.marker.setZIndexOffset(1000);
+  else entry.marker.setZIndexOffset(0);
+}
+
+// ── カードのアクティブ化（クリック時）──
+function activateCard(uid) {
+  if (activeId != null && activeId !== uid) {
+    const prev = document.querySelector(`.property-card[data-uid="${activeId}"]`);
+    if (prev) prev.classList.remove('active');
+    setMarkerHover(activeId, false);
+  }
+  activeId = uid;
+  const card = document.querySelector(`.property-card[data-uid="${uid}"]`);
+  if (card) { card.classList.add('active'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+  setMarkerHover(uid, true);
+}
+
+function onCard(uid) {
+  activateCard(uid);
+  const p = currentProperties.find(x => x._uid === uid);
+  if (p && p.lat && p.lng && markers[uid]) {
+    map.setView([p.lat, p.lng], 14, { animate: true });
+    markers[uid].marker.openPopup();
+  }
+}
+
+// ── リセット ──
+function resetAll() {
+  ['keyword','rentMin','rentMax'].forEach(id => document.getElementById(id).value = '');
+  ['structure','instrument'].forEach(id => document.getElementById(id).value = '');
+  currentProperties = [];
+  markerLayer.clearLayers();
+  markers = {};
+  if (centerMarker) { centerMarker.remove(); centerMarker = null; }
+  document.getElementById('propertyList').innerHTML = '<div class="empty-state"><div class="icon">🏠</div><div>条件を入力して「検索する」を押してください</div></div>';
+  document.getElementById('resultCount').textContent = '—';
+  document.getElementById('resultLabel').textContent = '件　検索してください';
+  document.getElementById('siteStatus').innerHTML = '';
+  document.getElementById('csvBtn').disabled = true;
+  map.setView([35.690, 139.730], 11);
+}
+
+// ── 全画面マップ ──
+function toggleFullscreen() {
+  isFullscreen = !isFullscreen;
+  const mapEl   = document.getElementById('map');
+  const ctrlEl  = document.getElementById('mapControls');
+  const legendEl = document.getElementById('mapLegend');
+  const btn = ctrlEl.querySelector('.map-btn');
+  if (isFullscreen) {
+    mapEl.classList.add('fullscreen-map');
+    ctrlEl.classList.add('fullscreen-controls');
+    legendEl.classList.add('fullscreen-legend');
+    btn.textContent = '✕ 閉じる';
+  } else {
+    mapEl.classList.remove('fullscreen-map');
+    ctrlEl.classList.remove('fullscreen-controls');
+    legendEl.classList.remove('fullscreen-legend');
+    btn.textContent = '⛶ 全画面';
+  }
+  setTimeout(() => map.invalidateSize(), 200);
+}
+
+// ── CSV エクスポート ──
+function exportCSV() {
+  const h = ['物件名','エリア','路線','最寄り駅','徒歩(分)','家賃下限(円)','家賃上限(円)','構造','面積','楽器条件','インターネット','情報源','物件URL'];
+  const rows = currentProperties.map(p => [p.name,p.area,p.line||'',p.station,p.walk,p.rentMin,p.rentMax,p.structure||'',p.size||'',p.instrument,p.internet,p.source,p.url]);
+  const csv = '﻿' + [h, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  a.download = `東京楽器可賃貸_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
+  a.click();
+  showToast('📥 CSVをダウンロードしました');
+}
+
+// ── 通知音 ──
+function playNotification() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+    g.gain.setValueAtTime(0.28, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+    o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.45);
+  } catch(e) {}
+}
+
+// ── トースト ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── Enter キーで検索 ──
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+// ── 初期化 ──
+window.addEventListener('load', () => {
+  initMap();
+  // サーバー接続確認
+  fetch(`${API_BASE}/api/search?keyword=テスト`, { signal: AbortSignal.timeout(3000) })
+    .catch(() => {
+      showToast('⚠️ サーバー未起動。start.bat を実行してください。');
+    });
+});
+</script>
+</body>
+</html>
