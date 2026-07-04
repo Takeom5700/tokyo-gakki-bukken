@@ -1,14 +1,18 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-adsense-account" content="ca-pub-8313146423164396">
+<meta name="description" content="東京都内の楽器可・防音賃貸物件を横断検索。SUUMO・HOME'S・ミュージションなど主要サイトをまとめて検索。RC造・SRC造に絞り込み可能。楽器可物件の探し方・エリア情報も充実。">
+<link rel="sitemap" type="application/xml" href="/sitemap.xml">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8313146423164396" crossorigin="anonymous"></script>
 <title>東京 楽器可防音賃貸 物件検索</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif; background: #f0f2f5; color: #333; height: 100vh; display: flex; flex-direction: column; }
+body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
 
 header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 header h1 { font-size: 1.2rem; font-weight: 700; }
@@ -19,7 +23,7 @@ header h1 { font-size: 1.2rem; font-weight: 700; }
 .sources a { color: #0f3460; text-decoration: none; }
 .sources a:hover { text-decoration: underline; }
 
-.layout { display: flex; flex: 1; overflow: hidden; }
+.layout { display: flex; height: calc(100vh - 80px); min-height: 500px; }
 
 /* ── 左パネル ── */
 .left-panel { width: 420px; min-width: 360px; background: #fff; display: flex; flex-direction: column; border-right: 1px solid #ddd; overflow: hidden; }
@@ -169,7 +173,10 @@ header h1 { font-size: 1.2rem; font-weight: 700; }
 
 <header>
   <h1>🏠 東京楽器可物件検索</h1>
-  <div class="header-right">リアルタイム<span class="sp-hide">横断検索</span></div>
+  <div class="header-right">
+    <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;" style="color:white;font-size:0.8rem;margin-right:12px;opacity:0.9;">🔍 物件検索</a>
+    <a href="#" onclick="document.getElementById('content').scrollIntoView({behavior:'smooth'});return false;" style="color:white;font-size:0.8rem;opacity:0.9;">📖 コラム</a>
+  </div>
 </header>
 
 <div class="sources">
@@ -183,7 +190,7 @@ header h1 { font-size: 1.2rem; font-weight: 700; }
   <span style="margin-left:8px;color:#999;border-left:1px solid #ddd;padding-left:10px;">⚠️ 検索結果は楽器演奏可能を保証するものではありません。必ず不動産会社に直接ご確認ください。</span>
 </div>
 
-<div class="layout">
+<div class="layout" id="search">
 
   <!-- 左パネル -->
   <div class="left-panel">
@@ -654,11 +661,73 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); }
 window.addEventListener('load', () => {
   initMap();
   // サーバー接続確認
-  fetch(`${API_BASE}/api/search?keyword=テスト`, { signal: AbortSignal.timeout(3000) })
+  fetch(`${API_BASE}/api/ping`, { signal: AbortSignal.timeout(5000) })
+    .then(r => { if (!r.ok) throw new Error(); })
     .catch(() => {
-      showToast('⚠️ サーバー未起動。start.bat を実行してください。');
+      showToast('❌ サーバーに接続できませんでした。start.bat でサーバーを起動してください。');
     });
 });
 </script>
+<section id="content" style="max-width:900px; margin:40px auto; padding:0 20px;">
+  <div style="text-align:center; margin-bottom:32px;">
+    <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;" style="display:inline-block; background:#0f3460; color:white; padding:10px 24px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:0.9em;">🔍 物件検索に戻る ↑</a>
+  </div>
+  <h2 style="font-size:1.4em; color:#1a3a5c; border-left:4px solid #0f3460; padding-left:12px; margin-bottom:20px;">楽器可物件とは？</h2>
+  <p style="line-height:1.9; color:#444; margin-bottom:16px;">
+    楽器可物件とは、ピアノ・ギター・管楽器などの演奏を入居条件として認めている賃貸物件のことです。
+    一般的な賃貸物件では騒音トラブルを避けるため楽器演奏を禁止していることが多いですが、
+    楽器可物件では防音工事済みの部屋や、隣室との距離を確保した設計など、演奏に配慮した物件が揃っています。
+  </p>
+  <p style="line-height:1.9; color:#444; margin-bottom:32px;">
+    東京都内の楽器可物件は主にRC造（鉄筋コンクリート）・SRC造（鉄骨鉄筋コンクリート）が多く、
+    木造や軽量鉄骨に比べて遮音性能が高いため、演奏者に人気のある物件タイプです。
+    本サービスでは、SUUMO・HOME'S・ミュージション等の主要不動産ポータルを横断検索し、
+    最新の楽器可物件情報をまとめて確認できます。
+  </p>
+
+  <h2 style="font-size:1.4em; color:#1a3a5c; border-left:4px solid #0f3460; padding-left:12px; margin-bottom:20px;">東京エリア別・楽器可物件の特徴</h2>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-bottom:32px;">
+    <div style="background:#f8f9fc; border-radius:8px; padding:16px;">
+      <h3 style="color:#0f3460; margin-bottom:8px;">🎵 新宿・中野エリア</h3>
+      <p style="font-size:0.9em; line-height:1.7; color:#555;">音楽スタジオが多く集まるエリア。ミュージシャン向け物件の流通が多く、家賃相場は10〜18万円台。中野はリーズナブルな楽器可物件も見つかりやすい。</p>
+    </div>
+    <div style="background:#f8f9fc; border-radius:8px; padding:16px;">
+      <h3 style="color:#0f3460; margin-bottom:8px;">🎸 渋谷・世田谷エリア</h3>
+      <p style="font-size:0.9em; line-height:1.7; color:#555;">音楽関係者が多く住む人気エリア。防音室付き物件も流通しており、本格的な演奏環境を求める方に人気。家賃相場は12〜25万円台。</p>
+    </div>
+    <div style="background:#f8f9fc; border-radius:8px; padding:16px;">
+      <h3 style="color:#0f3460; margin-bottom:8px;">🎹 北区・板橋エリア</h3>
+      <p style="font-size:0.9em; line-height:1.7; color:#555;">都心へのアクセスが良く、比較的家賃が抑えられるエリア。RC造の楽器可物件が多く、コストパフォーマンスを重視する演奏者に支持されている。</p>
+    </div>
+    <div style="background:#f8f9fc; border-radius:8px; padding:16px;">
+      <h3 style="color:#0f3460; margin-bottom:8px;">🎷 江東・墨田エリア</h3>
+      <p style="font-size:0.9em; line-height:1.7; color:#555;">近年再開発が進む注目エリア。新築・築浅のRC造物件が増えており、楽器可物件も充実。家賃相場は10〜16万円台でコスパが高い。</p>
+    </div>
+  </div>
+
+  <h2 style="font-size:1.4em; color:#1a3a5c; border-left:4px solid #0f3460; padding-left:12px; margin-bottom:20px;">楽器可物件を探すときのポイント</h2>
+  <ol style="line-height:2; color:#444; padding-left:20px; margin-bottom:32px;">
+    <li><strong>演奏可能な時間帯を確認する</strong>：24時間演奏可か、時間制限があるかで生活スタイルが大きく変わります。</li>
+    <li><strong>楽器の種類が許可されているか確認する</strong>：「ピアノ可」「管楽器不可」など物件によって条件が異なります。</li>
+    <li><strong>RC造・SRC造を優先する</strong>：コンクリート造は遮音性が高く、近隣トラブルが起きにくい構造です。</li>
+    <li><strong>防音設備の内容を確認する</strong>：防音工事済み・二重窓・防音扉など具体的な設備を不動産会社に確認しましょう。</li>
+    <li><strong>近隣環境をチェックする</strong>：スタジオや音楽教室が周辺にあるエリアは、音に寛容な環境であることが多いです。</li>
+  </ol>
+
+  <div style="background:#e8f0fe; border-radius:8px; padding:20px; margin-bottom:32px;">
+    <h3 style="color:#1a3a5c; margin-bottom:8px;">📖 関連コラム</h3>
+    <ul style="list-style:none; padding:0;">
+      <li style="padding:6px 0; border-bottom:1px solid #c5d3f0;"><a href="/tokyo-gakki-bukken/column-rc.html" style="color:#0f3460; text-decoration:none;">▶ RC造・SRC造とは？楽器演奏に向いている理由を解説</a></li>
+      <li style="padding:6px 0; border-bottom:1px solid #c5d3f0;"><a href="/tokyo-gakki-bukken/column-tips.html" style="color:#0f3460; text-decoration:none;">▶ 楽器可物件の内見で必ず確認すべき5つのチェックポイント</a></li>
+      <li style="padding:6px 0;"><a href="/tokyo-gakki-bukken/column-areas.html" style="color:#0f3460; text-decoration:none;">▶ 音楽家が選ぶ東京の住みやすいエリアランキング</a></li>
+    </ul>
+  </div>
+</section>
+
+<footer style="text-align:center; padding:16px; font-size:0.8em; color:#888; border-top:1px solid #eee; background:#fafafa;">
+  <a href="/tokyo-gakki-bukken/privacy.html" style="color:#888; margin:0 10px;">プライバシーポリシー</a>
+  <a href="/tokyo-gakki-bukken/column-rc.html" style="color:#888; margin:0 10px;">RC造・SRC造とは</a>
+  <a href="/tokyo-gakki-bukken/column-tips.html" style="color:#888; margin:0 10px;">内見チェックポイント</a>
+</footer>
 </body>
 </html>
