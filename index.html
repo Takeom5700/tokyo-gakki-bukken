@@ -295,9 +295,43 @@ header h1 { font-size: 1.2rem; font-weight: 700; }
 <div class="toast" id="toast"></div>
 
 <script>
-const API_BASE = 'https://tokyo-gakki-bukken.duckdns.org';
-const SITES = ['SUUMO を検索中...', "HOME'S を検索中...", 'ミュージション を検索中...', '防音賃貸.com を検索中...', 'Musicman不動産 を検索中...'];
+const DATA_URL = '/tokyo-gakki-bukken/data/results.json';
+const SITES = ['データを読み込み中...', 'キーワードで絞り込み中...', '地図データを準備中...'];
 let centerMarker = null;
+let _cachedData = null;
+let _cacheTime = 0;
+
+async function loadData() {
+  const now = Date.now();
+  if (_cachedData && now - _cacheTime < 10 * 60 * 1000) return _cachedData;
+  const res = await fetch(DATA_URL + '?t=' + Math.floor(now / 60000));
+  if (!res.ok) throw new Error('データ取得失敗');
+  _cachedData = await res.json();
+  _cacheTime = now;
+  return _cachedData;
+}
+
+async function geocodeKeyword(keyword) {
+  // Nominatim で緯度経度取得
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(keyword + ' 東京')}&format=json&limit=3&countrycodes=jp`,
+      { headers: { 'User-Agent': 'PropertySearchApp/1.0' } }
+    );
+    const items = await res.json();
+    for (const item of items) {
+      const lat = parseFloat(item.lat), lon = parseFloat(item.lon);
+      if (lat >= 34.5 && lat <= 36.8 && lon >= 138.5 && lon <= 140.9) return { lat, lon };
+    }
+  } catch (e) {}
+  return null;
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371, dlat = (lat2 - lat1) * Math.PI / 180, dlon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dlat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dlon/2)**2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
 
 let currentProperties = [];
 let markers = {};       // uid -> { marker, instrument }
@@ -359,56 +393,86 @@ function badgeCls(ins) {
 
 // ── 検索実行 ──
 async function doSearch() {
-  const keyword   = document.getElementById('keyword').value.trim();
-  const rentMinV  = parseFloat(document.getElementById('rentMin').value);
-  const rentMaxV  = parseFloat(document.getElementById('rentMax').value);
-  const structure = document.getElementById('structure').value;
+  const keyword    = document.getElementById('keyword').value.trim();
+  const rentMinV   = parseFloat(document.getElementById('rentMin').value);
+  const rentMaxV   = parseFloat(document.getElementById('rentMax').value);
+  const structure  = document.getElementById('structure').value;
   const instrument = document.getElementById('instrument').value;
 
-  // ローディング開始
   showLoading();
   document.getElementById('searchBtn').disabled = true;
   document.getElementById('csvBtn').disabled = true;
 
-  const params = new URLSearchParams();
-  if (keyword) params.set('keyword', keyword);
-  if (!isNaN(rentMaxV)) params.set('rent_max', Math.round(rentMaxV * 10000));
-  if (structure) params.set('structure', structure);
-  if (instrument) params.set('instrument', instrument);
-
-  let data;
+  let data, center = null;
   try {
-    const res = await fetch(`${API_BASE}/api/search?${params}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    data = await res.json();
+    data = await loadData();
   } catch (e) {
     hideLoading();
     document.getElementById('searchBtn').disabled = false;
-    showToast('❌ サーバーに接続できませんでした。start.bat でサーバーを起動してください。');
+    showToast('❌ データの読み込みに失敗しました。しばらくしてから再試行してください。');
     return;
   }
 
-  // フロントエンド側で家賃下限フィルター
-  let props = data.properties;
-  if (!isNaN(rentMinV)) {
-    props = props.filter(p => p.rentMax >= rentMinV * 10000);
+  // キーワードが駅名/エリアなら位置情報を取得
+  if (keyword) {
+    const geo = await geocodeKeyword(keyword);
+    if (geo) center = { lat: geo.lat, lng: geo.lon, keyword };
   }
 
-  // 数値インデックスをuidとして付与（URLはHTML属性に埋め込めないため）
+  const WALK_1H_KM = 4.8;
+  let props = data.properties.filter(p => {
+    // 家賃フィルター
+    if (!isNaN(rentMinV) && p.rentMax && p.rentMax < rentMinV * 10000) return false;
+    if (!isNaN(rentMaxV) && p.rentMin && p.rentMin > rentMaxV * 10000) return false;
+    // 構造フィルター
+    if (structure && !p.structure.includes(structure)) return false;
+    // 楽器条件フィルター
+    if (instrument) {
+      const m = { '24h': '24h演奏可', '楽器可': '楽器可', '相談可': '相談可' };
+      if (m[instrument] && p.instrument !== m[instrument]) return false;
+    }
+    return true;
+  });
+
+  if (center) {
+    // 位置情報あり: 距離を計算して1時間以内に絞り込み
+    props = props.map(p => {
+      if (p.lat && p.lng) {
+        const d = haversineKm(center.lat, center.lng, p.lat, p.lng);
+        return { ...p, distance_km: Math.round(d * 100) / 100, walk_from_center: Math.round(d * 1000 / 80) };
+      }
+      return { ...p, distance_km: null, walk_from_center: null };
+    }).filter(p => p.distance_km !== null && p.distance_km <= WALK_1H_KM);
+    props.sort((a, b) => a.distance_km - b.distance_km);
+  } else if (keyword) {
+    // テキスト一致検索
+    const kw = keyword.toLowerCase();
+    props = props.filter(p => (p.name + p.area + p.station + p.line).toLowerCase().includes(kw));
+    props.forEach(p => { p.distance_km = null; p.walk_from_center = null; });
+  } else {
+    props.forEach(p => { p.distance_km = null; p.walk_from_center = null; });
+  }
+
   props.forEach((p, i) => { p._uid = i; });
   currentProperties = props;
-  currentSort = 'distance';
+  currentSort = center ? 'distance' : 'rent_asc';
   hideLoading();
   playNotification();
-  renderList(data.center);
-  renderMap(data.center);
+  renderList(center);
+  renderMap(center);
   document.getElementById('resultCount').textContent = props.length;
   document.getElementById('resultLabel').textContent = '件の物件が見つかりました';
   document.getElementById('searchBtn').disabled = false;
   document.getElementById('csvBtn').disabled = props.length === 0;
   document.getElementById('sortBtns').style.display = props.length > 0 ? 'flex' : 'none';
-  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === 'distance'));
-  showToast(`🏠 ${props.length} 件の物件が見つかりました！`);
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === currentSort));
+  // データ更新日時を表示
+  if (data.updated) {
+    const dt = new Date(data.updated);
+    showToast(`🏠 ${props.length}件　データ更新: ${dt.toLocaleString('ja-JP')}`);
+  } else {
+    showToast(`🏠 ${props.length} 件の物件が見つかりました！`);
+  }
 }
 
 let currentSort = 'distance';
@@ -660,12 +724,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); }
 // ── 初期化 ──
 window.addEventListener('load', () => {
   initMap();
-  // サーバー接続確認
-  fetch(`${API_BASE}/api/ping`, { signal: AbortSignal.timeout(5000) })
-    .then(r => { if (!r.ok) throw new Error(); })
-    .catch(() => {
-      showToast('❌ サーバーに接続できませんでした。start.bat でサーバーを起動してください。');
-    });
+  // バックグラウンドでデータをプリフェッチ
+  loadData().catch(() => {});
 });
 </script>
 <section id="content" style="max-width:900px; margin:40px auto; padding:0 20px;">
