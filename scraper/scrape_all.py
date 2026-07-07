@@ -94,7 +94,10 @@ def geocode_address(address, station_name=''):
         key2 = 'sta:' + station_name
         if key2 in _geo_cache:
             return _geo_cache[key2]
-        items = _nominatim(station_name + ' 東京')
+        # 「東京」を付けずに検索（埼玉・神奈川等の駅にも対応）
+        items = _nominatim(station_name + ' 関東')
+        if not items:
+            items = _nominatim(station_name)
         for item in items:
             lat, lon = float(item['lat']), float(item['lon'])
             if _in_kanto(lat, lon):
@@ -223,11 +226,11 @@ def scrape_musision():
         name = m.group(1).strip() if m else ''
         if not name:
             continue
-        area = '東京都'; station = ''; walk = 0; rent_val = None
+        area = ''; station = ''; walk = 0; rent_val = None
         for el in d.select('h2, h3, p, li, td, th, div'):
             txt = el.text.strip()
             if '所在地' in txt or '住所' in txt:
-                m2 = re.search(r'(東京都[^\n\r]{4,30})', txt)
+                m2 = re.search(r'((東京都|神奈川県|埼玉県|千葉県|茨城県|栃木県|群馬県)[^\n\r]{4,30})', txt)
                 if m2:
                     area = m2.group(1).strip()
             if '駅' in txt and '徒歩' in txt and not station:
