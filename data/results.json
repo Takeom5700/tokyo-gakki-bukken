@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-15T23:52:32.625875+00:00",
+  "updated": "2026-07-16T01:49:44.066996+00:00",
   "total": 46,
   "properties": [
     {
@@ -7,14 +7,14 @@
       "area": "東京都大田区久が原２",
       "station": "西馬込駅",
       "line": "都営浅草線",
-      "walk": 12,
+      "walk": 15,
       "rentMin": 72000,
       "rentMax": 72000,
       "structure": "RC造",
       "size": "30m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108199928/?bc=100517032643",
+      "url": "https://suumo.jp/chintai/jnc_000108199928/?bc=100515051069",
       "source": "SUUMO",
       "lat": 35.582367,
       "lng": 139.696991
@@ -39,22 +39,22 @@
     {
       "name": "ハーモニーレジデンス秋葉原",
       "area": "東京都千代田区岩本町２",
-      "station": "秋葉原駅",
-      "line": "ＪＲ山手線",
-      "walk": 5,
+      "station": "岩本町駅",
+      "line": "都営新宿線",
+      "walk": 3,
       "rentMin": 165000,
       "rentMax": 165000,
       "structure": "RC造",
       "size": "40.34m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108521626/?bc=100516999221",
+      "url": "https://suumo.jp/chintai/jnc_000108521626/?bc=100516977785",
       "source": "SUUMO",
       "lat": 35.693527,
       "lng": 139.776932
     },
     {
-      "name": "Maison de CiEL V",
+      "name": "Ｍａｉｓｏｎ　ｄｅ　ＣｉＥＬ　V",
       "area": "東京都文京区大塚５",
       "station": "護国寺駅",
       "line": "東京メトロ有楽町線",
@@ -65,7 +65,7 @@
       "size": "14.75m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108214096/?bc=100515461892",
+      "url": "https://suumo.jp/chintai/jnc_000108214096/?bc=100514716681",
       "source": "SUUMO",
       "lat": 35.72279,
       "lng": 139.727295
@@ -105,7 +105,7 @@
       "lng": 139.743912
     },
     {
-      "name": "MELDIA鐘ヶ淵",
+      "name": "ＭＥＬＤＩＡ鐘ヶ淵",
       "area": "東京都墨田区墨田３",
       "station": "鐘ヶ淵駅",
       "line": "東武伊勢崎線",
@@ -116,7 +116,7 @@
       "size": "42.1m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000107976994/?bc=100513048611",
+      "url": "https://suumo.jp/chintai/jnc_000107976994/?bc=100512988863",
       "source": "SUUMO",
       "lat": 35.730129,
       "lng": 139.821014
@@ -133,13 +133,13 @@
       "size": "41.19m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108278216/?bc=100515403193",
+      "url": "https://suumo.jp/chintai/jnc_000108278216/?bc=100515354688",
       "source": "SUUMO",
       "lat": 35.716236,
       "lng": 139.755768
     },
     {
-      "name": "IXOモーニングサイド",
+      "name": "ＩＸＯモーニングサイド",
       "area": "東京都墨田区墨田４",
       "station": "八広駅",
       "line": "京成押上線",
@@ -150,7 +150,7 @@
       "size": "34.78m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000107618375/?bc=100515592430",
+      "url": "https://suumo.jp/chintai/jnc_000107618375/?bc=100512647313",
       "source": "SUUMO",
       "lat": 35.733158,
       "lng": 139.823883
@@ -167,7 +167,7 @@
       "size": "25.13m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108537021/?bc=100517125936",
+      "url": "https://suumo.jp/chintai/jnc_000108537021/?bc=100517021727",
       "source": "SUUMO",
       "lat": 35.693153,
       "lng": 139.739044
@@ -184,7 +184,7 @@
       "size": "22.29m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108470919/?bc=100516867634",
+      "url": "https://suumo.jp/chintai/jnc_000108470919/?bc=100516475941",
       "source": "SUUMO",
       "lat": 35.657631,
       "lng": 139.69487
@@ -201,7 +201,7 @@
       "size": "34.03m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108521655/?bc=100516978783",
+      "url": "https://suumo.jp/chintai/jnc_000108521655/?bc=100516977777",
       "source": "SUUMO",
       "lat": 35.688026,
       "lng": 139.788177
@@ -218,7 +218,7 @@
       "size": "32.7m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108537238/?bc=100517170614",
+      "url": "https://suumo.jp/chintai/jnc_000108537238/?bc=100517101436",
       "source": "SUUMO",
       "lat": 35.709702,
       "lng": 139.72963
@@ -269,7 +269,7 @@
       "size": "25.55m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000107452178/?bc=100513732635",
+      "url": "https://suumo.jp/chintai/jnc_000107452178/?bc=100513312631",
       "source": "SUUMO",
       "lat": 35.731598,
       "lng": 139.816986
@@ -303,7 +303,7 @@
       "size": "40.24m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000066557892/?bc=100514618781",
+      "url": "https://suumo.jp/chintai/jnc_000066557892/?bc=100513776040",
       "source": "SUUMO",
       "lat": 35.614552,
       "lng": 139.675873
@@ -312,7 +312,7 @@
       "name": "ボヌール小石川α",
       "area": "東京都文京区小石川３",
       "station": "春日駅",
-      "line": "都営三田線",
+      "line": "都営大江戸線",
       "walk": 5,
       "rentMin": 199000,
       "rentMax": 199000,
@@ -320,7 +320,7 @@
       "size": "39.31m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108199501/?bc=100517120771",
+      "url": "https://suumo.jp/chintai/jnc_000108199501/?bc=100508187050",
       "source": "SUUMO",
       "lat": 35.713135,
       "lng": 139.747864
@@ -337,7 +337,7 @@
       "size": "51.47m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108526557/?bc=100516949048",
+      "url": "https://suumo.jp/chintai/jnc_000108526557/?bc=100517023739",
       "source": "SUUMO",
       "lat": 35.725349,
       "lng": 139.817596
@@ -354,13 +354,13 @@
       "size": "25.98m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000107743243/?bc=100511577244",
+      "url": "https://suumo.jp/chintai/jnc_000107743243/?bc=100511114523",
       "source": "SUUMO",
       "lat": 35.69619,
       "lng": 139.780151
     },
     {
-      "name": "EXE日本橋",
+      "name": "EXE日本橋（エグゼ日本橋）",
       "area": "東京都中央区東日本橋２",
       "station": "東日本橋駅",
       "line": "都営浅草線",
@@ -371,13 +371,13 @@
       "size": "18.85m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000107884893/?bc=100508813629",
+      "url": "https://suumo.jp/chintai/jnc_000107884893/?bc=100516972529",
       "source": "SUUMO",
       "lat": 35.693485,
       "lng": 139.786774
     },
     {
-      "name": "Kewel緑が丘",
+      "name": "Ｋｅｗｅｌ緑が丘",
       "area": "東京都目黒区緑が丘３",
       "station": "緑が丘駅",
       "line": "東急大井町線",
@@ -388,13 +388,13 @@
       "size": "39.79m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000045051906/?bc=100507824835",
+      "url": "https://suumo.jp/chintai/jnc_000045051906/?bc=100507808251",
       "source": "SUUMO",
       "lat": 35.603954,
       "lng": 139.679962
     },
     {
-      "name": "ＮＳＧＡＴＥ勝どき",
+      "name": "NSGATE勝どき",
       "area": "東京都中央区勝どき２",
       "station": "勝どき駅",
       "line": "都営大江戸線",
@@ -405,7 +405,7 @@
       "size": "40.18m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108456046/?bc=100516627934",
+      "url": "https://suumo.jp/chintai/jnc_000108456046/?bc=100499656922",
       "source": "SUUMO",
       "lat": 35.658108,
       "lng": 139.779068
@@ -428,7 +428,7 @@
       "lng": 139.817596
     },
     {
-      "name": "アイル　グランデ押上ノースドゥーエ",
+      "name": "アイルグランデ押上   ドゥーエ",
       "area": "東京都墨田区墨田２",
       "station": "鐘ヶ淵駅",
       "line": "東武伊勢崎線",
@@ -447,16 +447,16 @@
     {
       "name": "レ　クロシェット",
       "area": "東京都千代田区飯田橋２",
-      "station": "水道橋駅",
+      "station": "飯田橋駅",
       "line": "ＪＲ中央線",
-      "walk": 7,
+      "walk": 10,
       "rentMin": 131000,
       "rentMax": 131000,
       "structure": "RC造",
       "size": "23.53m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108222072/?bc=100517130562",
+      "url": "https://suumo.jp/chintai/jnc_000108222072/?bc=100517114363",
       "source": "SUUMO",
       "lat": 35.699207,
       "lng": 139.750565
@@ -490,7 +490,7 @@
       "size": "37.64m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000108012120/?bc=100513220577",
+      "url": "https://suumo.jp/chintai/jnc_000108012120/?bc=100515170766",
       "source": "SUUMO",
       "lat": 35.576698,
       "lng": 139.685379
@@ -507,7 +507,7 @@
       "size": "35.68m2",
       "instrument": "相談可",
       "internet": "不明",
-      "url": "https://suumo.jp/chintai/jnc_000103090012/?bc=100476834013",
+      "url": "https://suumo.jp/chintai/jnc_000103090012/?bc=100462074971",
       "source": "SUUMO",
       "lat": 35.718987,
       "lng": 139.810257
@@ -628,8 +628,8 @@
       "internet": "不明",
       "url": "https://www.musision.jp/props/17132",
       "source": "ミュージション",
-      "lat": 35.6668404,
-      "lng": 139.6408829
+      "lat": 35.6676926,
+      "lng": 139.6416171
     },
     {
       "name": "ミュージションテラス志木南",
