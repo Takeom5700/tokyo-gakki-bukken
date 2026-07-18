@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -11,91 +11,123 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
+/* 東京楽器可物件検索 — ピアノ黒檀×真鍮の音楽モチーフ
+   クラス名はJSが生成するため変更禁止。値のみ刷新（単一ライトテーマ） */
+:root {
+  --ebony: #17181c;         /* ピアノ黒 */
+  --ebony-soft: #24262c;
+  --brass: #a07628;         /* 真鍮 */
+  --brass-deep: #7e5c1e;
+  --brass-tint: #f6f0e2;
+  --bg: #f1f1ec;
+  --surface: #ffffff;
+  --ink: #23252a;
+  --ink-sub: #5f6268;
+  --line: rgba(35, 37, 42, 0.14);
+  --ok: #1a7f4a;
+  --warn24: #b93a2b;
+  --consult: #2d5fb8;
+}
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", "Yu Gothic", Meiryo, sans-serif;
+  background: var(--bg); color: var(--ink); min-height: 100vh;
+  display: flex; flex-direction: column; overflow-y: auto;
+  line-height: 1.7; font-variant-numeric: tabular-nums;
+}
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+::selection { background: rgba(160, 118, 40, 0.22); }
 
-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-header h1 { font-size: 1.2rem; font-weight: 700; }
-.header-right { font-size: 0.75rem; opacity: 0.75; text-align: right; line-height: 1.5; }
+header {
+  background: var(--ebony); color: #fff; padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  border-bottom: 3px solid var(--brass);
+}
+header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em; }
+.header-right { font-size: 0.75rem; text-align: right; line-height: 1.5; }
+.header-right a { color: rgba(255,255,255,0.85); font-size: 0.8rem; text-decoration: none; }
+.header-right a:hover { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
 
-.sources { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 6px 20px; font-size: 0.72rem; color: #666; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
-.sources strong { color: #444; }
-.sources a { color: #0f3460; text-decoration: none; }
+.sources { background: var(--surface); border-bottom: 1px solid var(--line); padding: 6px 20px; font-size: 0.72rem; color: var(--ink-sub); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
+.sources strong { color: var(--ink); }
+.sources a { color: var(--brass-deep); text-decoration: none; }
 .sources a:hover { text-decoration: underline; }
 
 .layout { display: flex; height: calc(100vh - 80px); min-height: 500px; }
 
 /* ── 左パネル ── */
-.left-panel { width: 420px; min-width: 360px; background: #fff; display: flex; flex-direction: column; border-right: 1px solid #ddd; overflow: hidden; }
+.left-panel { width: 420px; min-width: 360px; background: var(--surface); display: flex; flex-direction: column; border-right: 1px solid var(--line); overflow: hidden; }
 
-.filters { padding: 14px 16px; border-bottom: 1px solid #eee; background: #fafafa; flex-shrink: 0; }
-.filters h2 { font-size: 0.78rem; font-weight: 700; color: #0f3460; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+.filters { padding: 14px 16px; border-bottom: 1px solid var(--line); background: #fafaf7; flex-shrink: 0; }
+.filters h2 { font-size: 0.74rem; font-weight: 700; color: var(--brass-deep); margin-bottom: 10px; letter-spacing: 0.18em; }
 .filter-group { margin-bottom: 8px; }
-.filter-group label { display: block; font-size: 0.72rem; color: #666; margin-bottom: 3px; font-weight: 600; }
-.filter-group input, .filter-group select { width: 100%; padding: 7px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.83rem; outline: none; }
-.filter-group input:focus, .filter-group select:focus { border-color: #0f3460; }
+.filter-group label { display: block; font-size: 0.72rem; color: var(--ink-sub); margin-bottom: 3px; font-weight: 600; }
+.filter-group input, .filter-group select { width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 0.83rem; font-family: inherit; color: var(--ink); background: var(--surface); outline: none; }
+.filter-group input:focus, .filter-group select:focus { border-color: var(--brass); box-shadow: 0 0 0 3px rgba(160,118,40,0.14); }
 .filter-row { display: flex; gap: 8px; }
 .filter-row .filter-group { flex: 1; }
 .filter-actions { display: flex; gap: 6px; margin-top: 10px; }
-.btn { padding: 8px 14px; border: none; border-radius: 6px; font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.btn-search { background: #0f3460; color: white; flex: 1; }
-.btn-search:hover { background: #1a4a7a; }
-.btn-search:disabled { background: #aaa; cursor: not-allowed; }
-.btn-reset { background: #f0f2f5; color: #555; }
-.btn-reset:hover { background: #e0e3e8; }
-.btn-csv { background: #27ae60; color: white; }
-.btn-csv:hover { background: #219a52; }
-.btn-csv:disabled { background: #aaa; cursor: not-allowed; }
+.btn { padding: 8px 14px; border: none; border-radius: 6px; font-size: 0.83rem; font-family: inherit; font-weight: 700; cursor: pointer; transition: background-color 0.15s ease, transform 0.08s ease; }
+.btn:active { transform: translateY(1px); }
+.btn-search { background: var(--ebony); color: #fff; flex: 1; letter-spacing: 0.08em; }
+.btn-search:hover { background: var(--ebony-soft); }
+.btn-search:disabled { background: #a9aaa6; cursor: not-allowed; }
+.btn-reset { background: var(--bg); color: var(--ink-sub); border: 1px solid var(--line); }
+.btn-reset:hover { background: #e6e6e0; }
+.btn-csv { background: var(--surface); color: var(--brass-deep); border: 1px solid var(--brass); }
+.btn-csv:hover { background: var(--brass-tint); }
+.btn-csv:disabled { background: var(--bg); color: #a9aaa6; border-color: var(--line); cursor: not-allowed; }
 
-.result-header { padding: 8px 16px; border-bottom: 1px solid #eee; background: #fff; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
-.result-count { font-size: 0.78rem; color: #666; }
-.result-count strong { color: #0f3460; font-size: 0.95rem; }
+.result-header { padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
+.result-count { font-size: 0.78rem; color: var(--ink-sub); }
+.result-count strong { color: var(--brass-deep); font-size: 1rem; font-variant-numeric: tabular-nums; }
 .sort-btns { display: flex; gap: 4px; flex-wrap: wrap; }
-.sort-btn { padding: 4px 10px; font-size: 0.72rem; border: 1px solid #ddd; border-radius: 12px; background: #f5f5f5; color: #555; cursor: pointer; font-weight: 600; transition: all 0.15s; }
-.sort-btn:hover { background: #e8edf5; border-color: #0f3460; }
-.sort-btn.active { background: #0f3460; color: white; border-color: #0f3460; }
+.sort-btn { padding: 4px 10px; font-size: 0.72rem; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); color: var(--ink-sub); cursor: pointer; font-family: inherit; font-weight: 600; transition: all 0.15s; }
+.sort-btn:hover { border-color: var(--ebony); color: var(--ink); }
+.sort-btn.active { background: var(--ebony); color: #fff; border-color: var(--ebony); }
 .site-status { display: flex; flex-wrap: wrap; gap: 4px; }
-.site-badge { font-size: 0.62rem; padding: 2px 6px; border-radius: 10px; font-weight: 600; }
-.site-ok { background: #d1fae5; color: #065f46; }
-.site-warn { background: #fef3c7; color: #92400e; }
-.site-err { background: #fee2e2; color: #991b1b; }
+.site-badge { font-size: 0.62rem; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
+.site-ok { background: #e2f2e8; color: #14603a; }
+.site-warn { background: #f7edd2; color: #7c5a10; }
+.site-err { background: #f9e2df; color: #8e2a1e; }
 
 .property-list { overflow-y: auto; flex: 1; padding: 10px; }
 
-.property-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.18s; }
-.property-card:hover { border-color: #0f3460; box-shadow: 0 3px 12px rgba(15,52,96,0.13); transform: translateY(-1px); }
-.property-card.active { border-color: #0f3460; background: #eef2f9; }
+.property-card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.property-card:hover { border-color: var(--brass); box-shadow: 0 1px 2px rgba(35,37,42,0.05), 0 6px 16px rgba(35,37,42,0.1); }
+.property-card.active { border-color: var(--brass); background: var(--brass-tint); }
 .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-.card-name { font-size: 0.88rem; font-weight: 700; color: #1a1a2e; flex: 1; line-height: 1.3; }
-.badge { font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; white-space: nowrap; margin-left: 8px; }
-.badge-24h { background: #fff3cd; color: #856404; }
-.badge-ok { background: #d1fae5; color: #065f46; }
-.badge-consult { background: #dbeafe; color: #1e40af; }
-.card-meta { font-size: 0.76rem; color: #666; margin-bottom: 5px; line-height: 1.6; }
-.card-rent { font-size: 1rem; font-weight: 700; color: #0f3460; margin-bottom: 5px; }
+.card-name { font-size: 0.88rem; font-weight: 700; color: var(--ink); flex: 1; line-height: 1.4; }
+.badge { font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 3px; white-space: nowrap; margin-left: 8px; }
+.badge-24h { background: #f9e2df; color: var(--warn24); }
+.badge-ok { background: #e2f2e8; color: var(--ok); }
+.badge-consult { background: #e4ecf9; color: var(--consult); }
+.card-meta { font-size: 0.76rem; color: var(--ink-sub); margin-bottom: 5px; line-height: 1.6; }
+.card-rent { font-size: 1.05rem; font-weight: 700; color: var(--brass-deep); margin-bottom: 5px; font-variant-numeric: tabular-nums; }
 .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
-.tag { font-size: 0.65rem; padding: 2px 7px; border-radius: 4px; font-weight: 600; background: #f0f2f5; color: #555; }
-.tag-rc { background: #e8f4fd; color: #1565c0; }
-.tag-src { background: #fce4ec; color: #880e4f; }
-.tag-net { background: #e8f5e9; color: #2e7d32; }
-.transit-row { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; background: #f8f9fb; border-radius: 6px; padding: 5px 8px; margin-bottom: 5px; font-size: 0.73rem; color: #444; }
+.tag { font-size: 0.65rem; padding: 2px 7px; border-radius: 3px; font-weight: 600; background: var(--bg); color: var(--ink-sub); }
+.tag-rc { background: #e4ecf9; color: #1c4c8e; }
+.tag-src { background: #f3e4ec; color: #7e2a52; }
+.tag-net { background: #e2f2e8; color: #1e6a3c; }
+.transit-row { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; background: #f7f7f3; border-radius: 5px; padding: 5px 8px; margin-bottom: 5px; font-size: 0.73rem; color: var(--ink); }
 .t-item { display: flex; align-items: center; gap: 2px; }
-.t-item b { color: #0f3460; }
-.t-sep { color: #ccc; font-size: 0.65rem; }
-.t-note { font-size: 0.6rem; color: #aaa; margin-left: 1px; }
-.t-map { margin-left: auto; font-size: 0.62rem; color: #0f3460; text-decoration: none; background: #e8eef7; padding: 2px 7px; border-radius: 4px; white-space: nowrap; font-weight: 600; }
-.t-map:hover { background: #d0ddf0; }
+.t-item b { color: var(--brass-deep); }
+.t-sep { color: #c5c6c0; font-size: 0.65rem; }
+.t-note { font-size: 0.6rem; color: #a3a49e; margin-left: 1px; }
+.t-map { margin-left: auto; font-size: 0.62rem; color: var(--brass-deep); text-decoration: none; background: var(--brass-tint); padding: 2px 7px; border-radius: 3px; white-space: nowrap; font-weight: 600; }
+.t-map:hover { background: #eee2c6; }
 .card-footer { display: flex; align-items: center; justify-content: space-between; }
-.card-source { font-size: 0.65rem; color: #aaa; }
-.btn-detail { font-size: 0.7rem; padding: 4px 10px; background: #0f3460; color: white; border-radius: 5px; text-decoration: none; font-weight: 600; }
-.btn-detail:hover { background: #1a4a7a; }
+.card-source { font-size: 0.65rem; color: #a3a49e; }
+.btn-detail { font-size: 0.7rem; padding: 4px 10px; background: var(--ebony); color: white; border-radius: 4px; text-decoration: none; font-weight: 600; }
+.btn-detail:hover { background: var(--ebony-soft); }
 
 /* ── 右パネル（地図）── */
 .right-panel { flex: 1; position: relative; }
 #map { width: 100%; height: 100%; }
 .map-controls { position: absolute; top: 10px; right: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; }
-.map-btn { background: white; border: 1px solid #ddd; border-radius: 7px; padding: 6px 12px; font-size: 0.75rem; cursor: pointer; font-weight: 600; color: #0f3460; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
-.map-legend { position: absolute; bottom: 28px; left: 10px; z-index: 1000; background: white; border-radius: 8px; padding: 8px 12px; font-size: 0.7rem; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.map-btn { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font-size: 0.75rem; font-family: inherit; cursor: pointer; font-weight: 600; color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+.map-btn:hover { border-color: var(--brass); color: var(--brass-deep); }
+.map-legend { position: absolute; bottom: 28px; left: 10px; z-index: 1000; background: var(--surface); border-radius: 6px; padding: 8px 12px; font-size: 0.7rem; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
 .map-legend div { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
 .legend-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); flex-shrink: 0; }
 
@@ -105,55 +137,77 @@ header h1 { font-size: 1.2rem; font-weight: 700; }
 .fullscreen-legend { position: fixed !important; bottom: 28px; left: 10px; z-index: 10000 !important; }
 
 /* ポップアップ */
-.popup-name { font-weight: 700; font-size: 0.88rem; margin-bottom: 3px; color: #1a1a2e; }
-.popup-sub { font-size: 0.75rem; color: #666; margin-bottom: 2px; }
-.popup-rent { font-size: 0.92rem; font-weight: 700; color: #0f3460; margin-bottom: 4px; }
-.popup-badge { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-bottom: 5px; }
-.popup-link { display: block; text-align: center; background: #0f3460; color: white; padding: 5px 8px; border-radius: 5px; text-decoration: none; font-size: 0.72rem; font-weight: 600; margin-top: 5px; }
-.popup-link:hover { background: #1a4a7a; }
+.popup-name { font-weight: 700; font-size: 0.88rem; margin-bottom: 3px; color: var(--ink); }
+.popup-sub { font-size: 0.75rem; color: var(--ink-sub); margin-bottom: 2px; }
+.popup-rent { font-size: 0.92rem; font-weight: 700; color: var(--brass-deep); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.popup-badge { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 3px; display: inline-block; margin-bottom: 5px; }
+.popup-link { display: block; text-align: center; background: var(--ebony); color: white; padding: 5px 8px; border-radius: 4px; text-decoration: none; font-size: 0.72rem; font-weight: 600; margin-top: 5px; }
+.popup-link:hover { background: var(--ebony-soft); }
 
 /* ローディングオーバーレイ */
-.loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15,52,96,0.88); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
+.loading-overlay { display: none; position: fixed; inset: 0; background: rgba(23, 24, 28, 0.92); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
 .loading-overlay.show { display: flex; }
-.spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.25); border-top-color: white; border-radius: 50%; animation: spin 0.9s linear infinite; margin-bottom: 18px; }
+.spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.2); border-top-color: var(--brass); border-radius: 50%; animation: spin 0.9s linear infinite; margin-bottom: 18px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pin-pulse { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.2); opacity: 0; } }
-.loading-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; }
+.loading-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.06em; }
 .loading-site { font-size: 0.83rem; opacity: 0.8; margin-bottom: 14px; min-height: 20px; }
-.loading-bar { width: 260px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
-.loading-bar-fill { height: 100%; background: white; border-radius: 2px; width: 0; transition: width 0.35s ease; }
+.loading-bar { width: 260px; height: 4px; background: rgba(255,255,255,0.18); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.loading-bar-fill { height: 100%; background: var(--brass); border-radius: 2px; width: 0; transition: width 0.35s ease; }
 .loading-note { font-size: 0.72rem; opacity: 0.55; }
 
 /* トースト */
-.toast { position: fixed; bottom: 22px; right: 22px; z-index: 99999; background: #1a1a2e; color: white; padding: 10px 18px; border-radius: 9px; font-size: 0.83rem; font-weight: 600; box-shadow: 0 4px 18px rgba(0,0,0,0.3); transform: translateY(80px); opacity: 0; transition: all 0.3s ease; pointer-events: none; }
+.toast { position: fixed; bottom: 22px; right: 22px; z-index: 99999; background: var(--ebony); color: white; padding: 10px 18px; border-radius: 6px; font-size: 0.83rem; font-weight: 600; box-shadow: 0 4px 18px rgba(0,0,0,0.3); transform: translateY(80px); opacity: 0; transition: all 0.3s ease; pointer-events: none; border-left: 3px solid var(--brass); }
 .toast.show { transform: translateY(0); opacity: 1; }
 
 /* 空状態 */
-.empty-state { text-align: center; padding: 40px 20px; color: #999; }
-.empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--ink-sub); }
+.empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; color: var(--brass); }
+
+/* ── コラムセクション ── */
+.content-sec { max-width: 900px; margin: 48px auto; padding: 0 20px; }
+.backtop-wrap { text-align: center; margin-bottom: 36px; }
+.backtop-btn { display: inline-block; background: var(--ebony); color: #fff; padding: 10px 26px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.9em; letter-spacing: 0.06em; }
+.backtop-btn:hover { background: var(--ebony-soft); }
+.content-sec h2 { font-size: 1.35em; color: var(--ink); letter-spacing: 0.04em; padding-bottom: 10px; border-bottom: 1px solid var(--line); margin: 36px 0 18px; }
+.content-sec h2::before { content: "♪ "; color: var(--brass); }
+.content-sec p { line-height: 1.95; color: var(--ink); margin-bottom: 16px; }
+.area-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 32px; }
+.area-card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
+.area-card h3 { color: var(--ink); margin-bottom: 8px; font-size: 1em; }
+.area-card p { font-size: 0.9em; line-height: 1.8; color: var(--ink-sub); margin: 0; }
+.point-list { line-height: 2.1; color: var(--ink); padding-left: 20px; margin-bottom: 32px; }
+.col-box { background: var(--brass-tint); border: 1px solid rgba(160, 118, 40, 0.3); border-radius: 8px; padding: 20px; margin-bottom: 32px; }
+.col-box h3 { color: var(--ink); margin-bottom: 8px; font-size: 1em; }
+.col-box ul { list-style: none; padding: 0; }
+.col-box li { padding: 6px 0; border-bottom: 1px solid rgba(160, 118, 40, 0.2); }
+.col-box li:last-child { border-bottom: none; }
+.col-box a { color: var(--brass-deep); text-decoration: none; }
+.col-box a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.site-footer { text-align: center; padding: 16px; font-size: 0.8em; color: var(--ink-sub); border-top: 1px solid var(--line); background: var(--surface); }
+.site-footer a { color: var(--ink-sub); margin: 0 10px; }
+.site-footer a:hover { color: var(--brass-deep); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; }
+  .spinner { animation-duration: 2s; }
+}
 
 @media (max-width: 768px) {
-  /* ヘッダー */
   header h1 { font-size: 1rem; }
   .header-right .sp-hide { display: none; }
-  /* sourcesバー非表示 */
   .sources { display: none; }
-  /* レイアウト: 縦積み */
   .layout { flex-direction: column; }
-  /* 地図: 上半分 */
   .right-panel { order: 1; height: 45vh; flex-shrink: 0; }
   #map { height: 100%; }
-  /* 左パネル: 下半分にスクロール可能リスト */
   .left-panel { order: 2; width: 100%; min-width: 0; flex: 1; overflow: hidden; }
-  /* フィルターを折りたたみ */
   .filters { padding: 8px 12px; }
   .filters h2 { font-size: 0.72rem; margin-bottom: 6px; }
   .filter-group label { font-size: 0.68rem; }
   .filter-group input, .filter-group select { padding: 5px 8px; font-size: 0.78rem; }
   .btn { padding: 7px 10px; font-size: 0.78rem; }
-  /* 結果リスト: 残り高さをフル活用 */
   .property-list { flex: 1; overflow-y: auto; }
-  /* カードをコンパクトに */
   .property-card { padding: 8px 10px; margin-bottom: 6px; }
   .card-name { font-size: 0.82rem; }
   .card-meta { font-size: 0.7rem; }
@@ -163,7 +217,6 @@ header h1 { font-size: 1.2rem; font-weight: 700; }
   .tag { font-size: 0.6rem; padding: 1px 5px; }
   .btn-detail { font-size: 0.65rem; padding: 3px 8px; }
   .card-source { font-size: 0.6rem; }
-  /* 地図凡例・コントロール */
   .map-legend { font-size: 0.62rem; padding: 5px 8px; }
   .map-btn { font-size: 0.68rem; padding: 4px 8px; }
 }
@@ -172,10 +225,10 @@ header h1 { font-size: 1.2rem; font-weight: 700; }
 <body>
 
 <header>
-  <h1>🏠 東京楽器可物件検索</h1>
+  <h1>東京楽器可物件検索</h1>
   <div class="header-right">
-    <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;" style="color:white;font-size:0.8rem;margin-right:12px;opacity:0.9;">🔍 物件検索</a>
-    <a href="#" onclick="document.getElementById('content').scrollIntoView({behavior:'smooth'});return false;" style="color:white;font-size:0.8rem;opacity:0.9;">📖 コラム</a>
+    <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;" style="margin-right:12px;">物件検索</a>
+    <a href="#" onclick="document.getElementById('content').scrollIntoView({behavior:'smooth'});return false;" >コラム</a>
   </div>
 </header>
 
@@ -195,7 +248,7 @@ header h1 { font-size: 1.2rem; font-weight: 700; }
   <!-- 左パネル -->
   <div class="left-panel">
     <div class="filters">
-      <h2>🔍 検索条件</h2>
+      <h2>検索条件</h2>
       <div class="filter-group">
         <label>駅名・エリア・ランドマーク</label>
         <input type="text" id="keyword" placeholder="例：赤坂、六本木、茗荷谷、麻布台ヒルズ">
@@ -230,9 +283,9 @@ header h1 { font-size: 1.2rem; font-weight: 700; }
         </div>
       </div>
       <div class="filter-actions">
-        <button class="btn btn-search" id="searchBtn" onclick="doSearch()">🔍 検索する</button>
+        <button class="btn btn-search" id="searchBtn" onclick="doSearch()">検索する</button>
         <button class="btn btn-reset" onclick="resetAll()">リセット</button>
-        <button class="btn btn-csv" id="csvBtn" onclick="exportCSV()" disabled>📥 CSV</button>
+        <button class="btn btn-csv" id="csvBtn" onclick="exportCSV()" disabled>CSV出力</button>
       </div>
     </div>
 
@@ -241,15 +294,15 @@ header h1 { font-size: 1.2rem; font-weight: 700; }
         <strong id="resultCount">—</strong> <span id="resultLabel">件　検索してください</span>
       </div>
       <div class="sort-btns" id="sortBtns" style="display:none;">
-        <button class="sort-btn active" data-sort="distance" onclick="setSort('distance')">📍 距離順</button>
-        <button class="sort-btn" data-sort="rent_asc" onclick="setSort('rent_asc')">💴 家賃↑</button>
-        <button class="sort-btn" data-sort="rent_desc" onclick="setSort('rent_desc')">💴 家賃↓</button>
+        <button class="sort-btn active" data-sort="distance" onclick="setSort('distance')">距離順</button>
+        <button class="sort-btn" data-sort="rent_asc" onclick="setSort('rent_asc')">家賃↑</button>
+        <button class="sort-btn" data-sort="rent_desc" onclick="setSort('rent_desc')">家賃↓</button>
       </div>
     </div>
 
     <div class="property-list" id="propertyList">
       <div class="empty-state">
-        <div class="icon">🏠</div>
+        <div class="icon">♪</div>
         <div>条件を入力して「検索する」を押してください</div>
         <div style="font-size:0.75rem;margin-top:6px;color:#bbb;">SUUMO・HOME'S・ミュージションなどを横断検索します</div>
       </div>
@@ -263,9 +316,9 @@ header h1 { font-size: 1.2rem; font-weight: 700; }
       <button class="map-btn" onclick="toggleFullscreen()">⛶ 全画面</button>
     </div>
     <div class="map-legend" id="mapLegend">
-      <div><span class="legend-dot" style="background:#e74c3c"></span>24h演奏可</div>
-      <div><span class="legend-dot" style="background:#27ae60"></span>楽器可</div>
-      <div><span class="legend-dot" style="background:#0f3460"></span>相談可</div>
+      <div><span class="legend-dot" style="background:#b93a2b"></span>24h演奏可</div>
+      <div><span class="legend-dot" style="background:#1a7f4a"></span>楽器可</div>
+      <div><span class="legend-dot" style="background:#2d5fb8"></span>相談可</div>
     </div>
   </div>
 </div>
@@ -273,7 +326,7 @@ header h1 { font-size: 1.2rem; font-weight: 700; }
 <!-- ローディング -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
-  <div class="loading-title">🔍 物件を調査中...</div>
+  <div class="loading-title">物件を調査中...</div>
   <div class="loading-site" id="loadingSite">SUUMO を検索中...</div>
   <div class="loading-bar"><div class="loading-bar-fill" id="loadingBar"></div></div>
   <div class="loading-note">複数サイトを並列横断検索しています。しばらくお待ちください。</div>
@@ -365,7 +418,7 @@ function fmtRent(mn, mx) {
   return mn === mx ? `${f(mn)}万円` : `${f(mn)}〜${f(mx)}万円`;
 }
 function markerColor(ins) {
-  return ins === '24h演奏可' ? '#e74c3c' : ins === '楽器可' ? '#27ae60' : '#0f3460';
+  return ins === '24h演奏可' ? '#b93a2b' : ins === '楽器可' ? '#1a7f4a' : '#2d5fb8';
 }
 function makeMarkerHtml(ins, isHovered) {
   const c = isHovered ? '#f39c12' : markerColor(ins);
@@ -527,7 +580,7 @@ function renderList(center) {
     const st   = (p.structure||'').includes('SRC') ? 'tag-src' : 'tag-rc';
     const net  = p.internet === '無料' ? '<span class="tag tag-net">📶 ネット無料</span>' : '';
     const size = p.size ? `<span class="tag">📐 ${p.size}</span>` : '';
-    const hasPin = (p.lat && p.lng) ? '<span style="color:#27ae60;font-size:0.7rem;margin-right:3px" title="地図にピンあり">📍</span>' : '';
+    const hasPin = (p.lat && p.lng) ? '<span style="color:#1a7f4a;font-size:0.7rem;margin-right:3px" title="地図にピンあり">📍</span>' : '';
     const rentTxt = fmtRent(p.rentMin, p.rentMax);
     let transitRow = '';
     if (center && p.distance_km != null) {
@@ -656,7 +709,7 @@ function resetAll() {
   markerLayer.clearLayers();
   markers = {};
   if (centerMarker) { centerMarker.remove(); centerMarker = null; }
-  document.getElementById('propertyList').innerHTML = '<div class="empty-state"><div class="icon">🏠</div><div>条件を入力して「検索する」を押してください</div></div>';
+  document.getElementById('propertyList').innerHTML = '<div class="empty-state"><div class="icon">♪</div><div>条件を入力して「検索する」を押してください</div></div>';
   document.getElementById('resultCount').textContent = '—';
   document.getElementById('resultLabel').textContent = '件　検索してください';
   document.getElementById('siteStatus').innerHTML = '';
@@ -728,45 +781,45 @@ window.addEventListener('load', () => {
   loadData().catch(() => {});
 });
 </script>
-<section id="content" style="max-width:900px; margin:40px auto; padding:0 20px;">
-  <div style="text-align:center; margin-bottom:32px;">
-    <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;" style="display:inline-block; background:#0f3460; color:white; padding:10px 24px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:0.9em;">🔍 物件検索に戻る ↑</a>
+<section id="content" class="content-sec">
+  <div class="backtop-wrap">
+    <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;" class="backtop-btn">物件検索に戻る ↑</a>
   </div>
-  <h2 style="font-size:1.4em; color:#1a3a5c; border-left:4px solid #0f3460; padding-left:12px; margin-bottom:20px;">楽器可物件とは？</h2>
-  <p style="line-height:1.9; color:#444; margin-bottom:16px;">
+  <h2>楽器可物件とは？</h2>
+  <p>
     楽器可物件とは、ピアノ・ギター・管楽器などの演奏を入居条件として認めている賃貸物件のことです。
     一般的な賃貸物件では騒音トラブルを避けるため楽器演奏を禁止していることが多いですが、
     楽器可物件では防音工事済みの部屋や、隣室との距離を確保した設計など、演奏に配慮した物件が揃っています。
   </p>
-  <p style="line-height:1.9; color:#444; margin-bottom:32px;">
+  <p>
     東京都内の楽器可物件は主にRC造（鉄筋コンクリート）・SRC造（鉄骨鉄筋コンクリート）が多く、
     木造や軽量鉄骨に比べて遮音性能が高いため、演奏者に人気のある物件タイプです。
     本サービスでは、SUUMO・HOME'S・ミュージション等の主要不動産ポータルを横断検索し、
     最新の楽器可物件情報をまとめて確認できます。
   </p>
 
-  <h2 style="font-size:1.4em; color:#1a3a5c; border-left:4px solid #0f3460; padding-left:12px; margin-bottom:20px;">東京エリア別・楽器可物件の特徴</h2>
-  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-bottom:32px;">
-    <div style="background:#f8f9fc; border-radius:8px; padding:16px;">
-      <h3 style="color:#0f3460; margin-bottom:8px;">🎵 新宿・中野エリア</h3>
-      <p style="font-size:0.9em; line-height:1.7; color:#555;">音楽スタジオが多く集まるエリア。ミュージシャン向け物件の流通が多く、家賃相場は10〜18万円台。中野はリーズナブルな楽器可物件も見つかりやすい。</p>
+  <h2>東京エリア別・楽器可物件の特徴</h2>
+  <div class="area-grid">
+    <div class="area-card">
+      <h3>新宿・中野エリア</h3>
+      <p>音楽スタジオが多く集まるエリア。ミュージシャン向け物件の流通が多く、家賃相場は10〜18万円台。中野はリーズナブルな楽器可物件も見つかりやすい。</p>
     </div>
-    <div style="background:#f8f9fc; border-radius:8px; padding:16px;">
-      <h3 style="color:#0f3460; margin-bottom:8px;">🎸 渋谷・世田谷エリア</h3>
-      <p style="font-size:0.9em; line-height:1.7; color:#555;">音楽関係者が多く住む人気エリア。防音室付き物件も流通しており、本格的な演奏環境を求める方に人気。家賃相場は12〜25万円台。</p>
+    <div class="area-card">
+      <h3>渋谷・世田谷エリア</h3>
+      <p>音楽関係者が多く住む人気エリア。防音室付き物件も流通しており、本格的な演奏環境を求める方に人気。家賃相場は12〜25万円台。</p>
     </div>
-    <div style="background:#f8f9fc; border-radius:8px; padding:16px;">
-      <h3 style="color:#0f3460; margin-bottom:8px;">🎹 北区・板橋エリア</h3>
-      <p style="font-size:0.9em; line-height:1.7; color:#555;">都心へのアクセスが良く、比較的家賃が抑えられるエリア。RC造の楽器可物件が多く、コストパフォーマンスを重視する演奏者に支持されている。</p>
+    <div class="area-card">
+      <h3>北区・板橋エリア</h3>
+      <p>都心へのアクセスが良く、比較的家賃が抑えられるエリア。RC造の楽器可物件が多く、コストパフォーマンスを重視する演奏者に支持されている。</p>
     </div>
-    <div style="background:#f8f9fc; border-radius:8px; padding:16px;">
-      <h3 style="color:#0f3460; margin-bottom:8px;">🎷 江東・墨田エリア</h3>
-      <p style="font-size:0.9em; line-height:1.7; color:#555;">近年再開発が進む注目エリア。新築・築浅のRC造物件が増えており、楽器可物件も充実。家賃相場は10〜16万円台でコスパが高い。</p>
+    <div class="area-card">
+      <h3>江東・墨田エリア</h3>
+      <p>近年再開発が進む注目エリア。新築・築浅のRC造物件が増えており、楽器可物件も充実。家賃相場は10〜16万円台でコスパが高い。</p>
     </div>
   </div>
 
-  <h2 style="font-size:1.4em; color:#1a3a5c; border-left:4px solid #0f3460; padding-left:12px; margin-bottom:20px;">楽器可物件を探すときのポイント</h2>
-  <ol style="line-height:2; color:#444; padding-left:20px; margin-bottom:32px;">
+  <h2>楽器可物件を探すときのポイント</h2>
+  <ol class="point-list">
     <li><strong>演奏可能な時間帯を確認する</strong>：24時間演奏可か、時間制限があるかで生活スタイルが大きく変わります。</li>
     <li><strong>楽器の種類が許可されているか確認する</strong>：「ピアノ可」「管楽器不可」など物件によって条件が異なります。</li>
     <li><strong>RC造・SRC造を優先する</strong>：コンクリート造は遮音性が高く、近隣トラブルが起きにくい構造です。</li>
@@ -774,20 +827,20 @@ window.addEventListener('load', () => {
     <li><strong>近隣環境をチェックする</strong>：スタジオや音楽教室が周辺にあるエリアは、音に寛容な環境であることが多いです。</li>
   </ol>
 
-  <div style="background:#e8f0fe; border-radius:8px; padding:20px; margin-bottom:32px;">
-    <h3 style="color:#1a3a5c; margin-bottom:8px;">📖 関連コラム</h3>
-    <ul style="list-style:none; padding:0;">
-      <li style="padding:6px 0; border-bottom:1px solid #c5d3f0;"><a href="/tokyo-gakki-bukken/column-rc.html" style="color:#0f3460; text-decoration:none;">▶ RC造・SRC造とは？楽器演奏に向いている理由を解説</a></li>
-      <li style="padding:6px 0; border-bottom:1px solid #c5d3f0;"><a href="/tokyo-gakki-bukken/column-tips.html" style="color:#0f3460; text-decoration:none;">▶ 楽器可物件の内見で必ず確認すべき5つのチェックポイント</a></li>
-      <li style="padding:6px 0;"><a href="/tokyo-gakki-bukken/column-areas.html" style="color:#0f3460; text-decoration:none;">▶ 音楽家が選ぶ東京の住みやすいエリアランキング</a></li>
+  <div class="col-box">
+    <h3>関連コラム</h3>
+    <ul>
+      <li><a href="/tokyo-gakki-bukken/column-rc.html">▶ RC造・SRC造とは？楽器演奏に向いている理由を解説</a></li>
+      <li><a href="/tokyo-gakki-bukken/column-tips.html">▶ 楽器可物件の内見で必ず確認すべき5つのチェックポイント</a></li>
+      <li><a href="/tokyo-gakki-bukken/column-areas.html">▶ 音楽家が選ぶ東京の住みやすいエリアランキング</a></li>
     </ul>
   </div>
 </section>
 
-<footer style="text-align:center; padding:16px; font-size:0.8em; color:#888; border-top:1px solid #eee; background:#fafafa;">
-  <a href="/tokyo-gakki-bukken/privacy.html" style="color:#888; margin:0 10px;">プライバシーポリシー</a>
-  <a href="/tokyo-gakki-bukken/column-rc.html" style="color:#888; margin:0 10px;">RC造・SRC造とは</a>
-  <a href="/tokyo-gakki-bukken/column-tips.html" style="color:#888; margin:0 10px;">内見チェックポイント</a>
+<footer class="site-footer">
+  <a href="/tokyo-gakki-bukken/privacy.html">プライバシーポリシー</a>
+  <a href="/tokyo-gakki-bukken/column-rc.html">RC造・SRC造とは</a>
+  <a href="/tokyo-gakki-bukken/column-tips.html">内見チェックポイント</a>
 </footer>
 </body>
 </html>
