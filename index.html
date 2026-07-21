@@ -85,6 +85,9 @@ header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em; }
 .result-header { padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--surface); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
 .result-count { font-size: 0.78rem; color: var(--ink-sub); }
 .result-count strong { color: var(--brass-deep); font-size: 1rem; font-variant-numeric: tabular-nums; }
+.area-tag { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; font-size: 0.68rem; font-weight: 700; color: var(--brass-deep); background: var(--brass-tint); border: 1px solid rgba(160,118,40,0.3); border-radius: 20px; padding: 2px 4px 2px 9px; }
+.area-tag button { border: none; background: rgba(160,118,40,0.18); color: var(--brass-deep); width: 16px; height: 16px; border-radius: 50%; font-size: 0.62rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.area-tag button:hover { background: rgba(160,118,40,0.32); }
 .sort-btns { display: flex; gap: 4px; flex-wrap: wrap; }
 .sort-btn { padding: 4px 10px; font-size: 0.72rem; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); color: var(--ink-sub); cursor: pointer; font-family: inherit; font-weight: 600; transition: all 0.15s; }
 .sort-btn:hover { border-color: var(--ebony); color: var(--ink); }
@@ -131,6 +134,10 @@ header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em; }
 .map-controls { position: absolute; top: 10px; right: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; }
 .map-btn { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font-size: 0.75rem; font-family: inherit; cursor: pointer; font-weight: 600; color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
 .map-btn:hover { border-color: var(--brass); color: var(--brass-deep); }
+.map-btn.active { background: var(--ebony); color: #fff; border-color: var(--ebony); }
+.right-panel.drawing #map { cursor: crosshair; touch-action: none; }
+.draw-hint { display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; background: var(--ebony); color: #fff; font-size: 0.74rem; font-weight: 600; padding: 6px 14px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); white-space: nowrap; pointer-events: none; }
+.draw-hint.show { display: block; }
 .map-legend { position: absolute; bottom: 28px; left: 10px; z-index: 1000; background: var(--surface); border-radius: 6px; padding: 8px 12px; font-size: 0.7rem; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
 .map-legend div { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
 .legend-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); flex-shrink: 0; }
@@ -139,6 +146,7 @@ header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em; }
 .fullscreen-map { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; z-index: 9999 !important; }
 .fullscreen-controls { position: fixed !important; top: 10px; right: 10px; z-index: 10000 !important; }
 .fullscreen-legend { position: fixed !important; bottom: 28px; left: 10px; z-index: 10000 !important; }
+.fullscreen-hint { position: fixed !important; z-index: 10000 !important; }
 
 /* ポップアップ */
 .popup-name { font-weight: 700; font-size: 0.88rem; margin-bottom: 3px; color: var(--ink); }
@@ -301,6 +309,7 @@ header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em; }
     <div class="result-header">
       <div class="result-count">
         <strong id="resultCount">—</strong> <span id="resultLabel">件　検索してください</span>
+        <span class="area-tag" id="areaTag" style="display:none;">📐 範囲指定中 <button onclick="clearDrawnArea()" title="範囲を解除">✕</button></span>
       </div>
       <div class="sort-btns" id="sortBtns" style="display:none;">
         <button class="sort-btn active" data-sort="distance" onclick="setSort('distance')">距離順</button>
@@ -322,8 +331,10 @@ header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em; }
   <div class="right-panel" id="rightPanel">
     <div id="map"></div>
     <div class="map-controls" id="mapControls">
-      <button class="map-btn" onclick="toggleFullscreen()">⛶ 全画面</button>
+      <button class="map-btn" id="drawAreaBtn" onclick="toggleDrawMode()">🖊 範囲で検索</button>
+      <button class="map-btn" id="fullscreenBtn" onclick="toggleFullscreen()">⛶ 全画面</button>
     </div>
+    <div class="draw-hint" id="drawHint">地図をなぞって検索範囲を描いてください</div>
     <div class="map-legend" id="mapLegend">
       <div><span class="legend-dot" style="background:#b93a2b"></span>24h演奏可</div>
       <div><span class="legend-dot" style="background:#1a7f4a"></span>楽器可</div>
@@ -409,6 +420,118 @@ function initMap() {
     maxZoom: 18
   }).addTo(map);
   markerLayer = L.layerGroup().addTo(map);
+  initAreaDraw();
+}
+
+// ── 範囲描画検索（地図をなぞって囲んだ範囲の物件を検索） ──
+let isDrawMode = false, isDrawing = false;
+let drawPoints = [], drawTempLine = null;
+let drawnAreaLatLngs = null, drawnAreaLayer = null;
+
+function pointInPolygon(lat, lng, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const yi = poly[i][0], xi = poly[i][1];
+    const yj = poly[j][0], xj = poly[j][1];
+    const intersect = ((yi > lat) !== (yj > lat)) &&
+      (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function initAreaDraw() {
+  const container = map.getContainer();
+  container.addEventListener('pointerdown', onDrawPointerDown);
+}
+
+function toggleDrawMode() {
+  isDrawMode ? exitDrawMode() : enterDrawMode();
+}
+
+function enterDrawMode() {
+  isDrawMode = true;
+  clearDrawnArea(false);
+  map.dragging.disable();
+  map.doubleClickZoom.disable();
+  map.scrollWheelZoom.disable();
+  map.boxZoom.disable();
+  if (map.tap) map.tap.disable();
+  document.getElementById('rightPanel').classList.add('drawing');
+  document.getElementById('drawAreaBtn').classList.add('active');
+  document.getElementById('drawAreaBtn').textContent = '✕ 描画をやめる';
+  document.getElementById('drawHint').classList.add('show');
+}
+
+function exitDrawMode() {
+  isDrawMode = false;
+  isDrawing = false;
+  map.dragging.enable();
+  map.doubleClickZoom.enable();
+  map.scrollWheelZoom.enable();
+  map.boxZoom.enable();
+  if (map.tap) map.tap.enable();
+  document.getElementById('rightPanel').classList.remove('drawing');
+  document.getElementById('drawAreaBtn').classList.remove('active');
+  document.getElementById('drawAreaBtn').textContent = '🖊 範囲で検索';
+  document.getElementById('drawHint').classList.remove('show');
+}
+
+function onDrawPointerDown(e) {
+  if (!isDrawMode) return;
+  e.preventDefault();
+  isDrawing = true;
+  const latlng = map.mouseEventToLatLng(e);
+  drawPoints = [latlng];
+  drawTempLine = L.polyline([latlng], { color: '#f39c12', weight: 3, dashArray: '5,5' }).addTo(map);
+  map.getContainer().setPointerCapture(e.pointerId);
+  window.addEventListener('pointermove', onDrawPointerMove);
+  window.addEventListener('pointerup', onDrawPointerUp);
+}
+
+function onDrawPointerMove(e) {
+  if (!isDrawing) return;
+  e.preventDefault();
+  const latlng = map.mouseEventToLatLng(e);
+  const last = drawPoints[drawPoints.length - 1];
+  if (map.latLngToContainerPoint(latlng).distanceTo(map.latLngToContainerPoint(last)) < 4) return;
+  drawPoints.push(latlng);
+  drawTempLine.setLatLngs(drawPoints);
+}
+
+function onDrawPointerUp(e) {
+  if (!isDrawing) return;
+  isDrawing = false;
+  window.removeEventListener('pointermove', onDrawPointerMove);
+  window.removeEventListener('pointerup', onDrawPointerUp);
+  if (drawTempLine) { drawTempLine.remove(); drawTempLine = null; }
+
+  if (drawPoints.length < 3) {
+    showToast('⚠️ 範囲が小さすぎます。もう一度なぞってください');
+    exitDrawMode();
+    return;
+  }
+  drawnAreaLatLngs = drawPoints.map(ll => [ll.lat, ll.lng]);
+  drawnAreaLayer = L.polygon(drawPoints, {
+    color: '#f39c12', weight: 2, fillColor: '#f39c12', fillOpacity: 0.15
+  }).addTo(map);
+  exitDrawMode();
+  const kwEl = document.getElementById('keyword');
+  kwEl.value = '';
+  kwEl.disabled = true;
+  kwEl.placeholder = '範囲指定中は使用できません';
+  document.getElementById('areaTag').style.display = 'inline-flex';
+  doSearch();
+}
+
+function clearDrawnArea(rerun = true) {
+  drawnAreaLatLngs = null;
+  if (drawnAreaLayer) { drawnAreaLayer.remove(); drawnAreaLayer = null; }
+  document.getElementById('areaTag').style.display = 'none';
+  const kwEl = document.getElementById('keyword');
+  kwEl.disabled = false;
+  kwEl.placeholder = '例：赤坂、六本木、茗荷谷、麻布台ヒルズ';
+  if (rerun) doSearch();
 }
 
 // ── ユーティリティ ──
@@ -477,8 +600,8 @@ async function doSearch() {
     return;
   }
 
-  // キーワードが駅名/エリアなら位置情報を取得
-  if (keyword) {
+  // キーワードが駅名/エリアなら位置情報を取得（範囲指定中はスキップ）
+  if (keyword && !drawnAreaLatLngs) {
     const geo = await geocodeKeyword(keyword);
     if (geo) center = { lat: geo.lat, lng: geo.lon, keyword };
   }
@@ -500,7 +623,11 @@ async function doSearch() {
     return true;
   });
 
-  if (center) {
+  if (drawnAreaLatLngs) {
+    // 地図で囲んだ範囲内に絞り込み
+    props = props.filter(p => p.lat && p.lng && pointInPolygon(p.lat, p.lng, drawnAreaLatLngs));
+    props.forEach(p => { p.distance_km = null; p.walk_from_center = null; });
+  } else if (center) {
     // 位置情報あり: 距離を計算して1時間以内に絞り込み
     props = props.map(p => {
       if (p.lat && p.lng) {
@@ -533,7 +660,9 @@ async function doSearch() {
   document.getElementById('sortBtns').style.display = props.length > 0 ? 'flex' : 'none';
   document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === currentSort));
   // データ更新日時を表示
-  if (data.updated) {
+  if (drawnAreaLatLngs) {
+    showToast(`📐 指定範囲内: ${props.length}件の物件が見つかりました`);
+  } else if (data.updated) {
     const dt = new Date(data.updated);
     showToast(`🏠 ${props.length}件　データ更新: ${dt.toLocaleString('ja-JP')}`);
   } else {
@@ -645,6 +774,8 @@ function renderMap(center) {
   if (centerMarker) { centerMarker.remove(); centerMarker = null; }
   const bounds = [];
 
+  if (drawnAreaLatLngs) bounds.push(...drawnAreaLatLngs);
+
   // センターマーカー（検索場所）
   if (center && center.lat && center.lng) {
     const starIcon = L.divIcon({
@@ -721,6 +852,8 @@ function resetAll() {
   ['keyword','rentMin','rentMax'].forEach(id => document.getElementById(id).value = '');
   ['structure','instrument'].forEach(id => document.getElementById(id).value = '');
   ['noDeposit','noKeyMoney'].forEach(id => document.getElementById(id).checked = false);
+  if (isDrawMode) exitDrawMode();
+  clearDrawnArea(false);
   currentProperties = [];
   markerLayer.clearLayers();
   markers = {};
@@ -739,16 +872,19 @@ function toggleFullscreen() {
   const mapEl   = document.getElementById('map');
   const ctrlEl  = document.getElementById('mapControls');
   const legendEl = document.getElementById('mapLegend');
-  const btn = ctrlEl.querySelector('.map-btn');
+  const hintEl  = document.getElementById('drawHint');
+  const btn = document.getElementById('fullscreenBtn');
   if (isFullscreen) {
     mapEl.classList.add('fullscreen-map');
     ctrlEl.classList.add('fullscreen-controls');
     legendEl.classList.add('fullscreen-legend');
+    hintEl.classList.add('fullscreen-hint');
     btn.textContent = '✕ 閉じる';
   } else {
     mapEl.classList.remove('fullscreen-map');
     ctrlEl.classList.remove('fullscreen-controls');
     legendEl.classList.remove('fullscreen-legend');
+    hintEl.classList.remove('fullscreen-hint');
     btn.textContent = '⛶ 全画面';
   }
   setTimeout(() => map.invalidateSize(), 200);
