@@ -116,6 +116,11 @@ def safe_get(url, timeout=10):
         print(f'[WARN] GET {url} -> {e}')
         return None
 
+ZERO_FEE_TOKENS = {'-', 'ー', '−', '無', '無し', 'なし', '0', '0円', '0ヶ月'}
+
+def is_zero_fee(text):
+    return (text or '').strip() in ZERO_FEE_TOKENS
+
 def parse_rent(text):
     if not text:
         return None
@@ -179,6 +184,9 @@ def _scrape_suumo_url(base_url, results):
             layout_text = tds[5].text.strip() if len(tds) > 5 else ''
             size_m = re.search(r'([\d.]+m\S*)', layout_text)
             size = size_m.group(1) if size_m else ''
+            fee_parts = tds[4].text.split() if len(tds) > 4 else []
+            no_deposit = is_zero_fee(fee_parts[0] if len(fee_parts) > 0 else '')
+            no_keymoney = is_zero_fee(fee_parts[1] if len(fee_parts) > 1 else '')
             link = row.select_one('a[href*="/chintai/"]')
             url = ('https://suumo.jp' + link['href']) if link and not link['href'].startswith('http') else (link['href'] if link else base_url)
             lat, lng = geocode_address(area, station)
@@ -186,6 +194,7 @@ def _scrape_suumo_url(base_url, results):
                             'walk': walk, 'rentMin': rent_val, 'rentMax': rent_val,
                             'structure': detected_structure, 'size': size,
                             'instrument': ins, 'internet': '不明', 'url': url,
+                            'noDeposit': no_deposit, 'noKeyMoney': no_keymoney,
                             'source': 'SUUMO', 'lat': lat, 'lng': lng})
 
 def scrape_suumo():
@@ -250,6 +259,7 @@ def scrape_musision():
                         'walk': walk, 'rentMin': rent_val or 0, 'rentMax': rent_val or 0,
                         'structure': 'RC造', 'size': '',
                         'instrument': '24h演奏可', 'internet': '不明', 'url': href,
+                        'noDeposit': False, 'noKeyMoney': False,
                         'source': 'ミュージション', 'lat': lat, 'lng': lng})
     print(f'[ミュージション] {len(results)}件')
     return results
@@ -284,6 +294,7 @@ def scrape_bouon():
         if not name:
             continue
         rent_val = None; station = ''; walk = 0; area = '東京都'; structure = 'RC造'; size = ''
+        no_deposit = False; no_keymoney = False
         for row in d.select('.detail-list-item'):
             title_el = row.select_one('.detail-list-item-title')
             content_el = row.select_one('.detail-list-item-content, p, span:not(.detail-list-item-title)')
@@ -308,11 +319,16 @@ def scrape_bouon():
             elif '専有面積' in label or '間取り' in label:
                 sm2 = re.search(r'([\d.]+㎡)', value)
                 if sm2: size = sm2.group(1)
+            elif '敷金' in label and '礼金' in label:
+                fee_parts = value.split('/')
+                no_deposit = is_zero_fee(fee_parts[0] if len(fee_parts) > 0 else '')
+                no_keymoney = is_zero_fee(fee_parts[1] if len(fee_parts) > 1 else '')
         lat, lng = geocode_address(area, station)
         results.append({'name': name, 'area': area, 'station': station, 'line': '',
                         'walk': walk, 'rentMin': rent_val or 0, 'rentMax': rent_val or 0,
                         'structure': structure, 'size': size,
                         'instrument': '24h演奏可', 'internet': '不明', 'url': href,
+                        'noDeposit': no_deposit, 'noKeyMoney': no_keymoney,
                         'source': '防音賃貸.com', 'lat': lat, 'lng': lng})
     print(f'[防音賃貸.com] {len(results)}件')
     return results
@@ -349,6 +365,7 @@ def scrape_musicman():
         if not name:
             continue
         rent_val = None; station = ''; walk = 0; area = '東京都'; structure = 'RC造'; size = ''
+        no_deposit = False; no_keymoney = False
         for tr in d.select('tr'):
             cells = tr.select('th, td')
             if len(cells) < 2:
@@ -370,11 +387,16 @@ def scrape_musicman():
             elif '面積' in label:
                 sm2 = re.search(r'([\d.]+)㎡', value)
                 if sm2: size = sm2.group(1) + '㎡'
+            elif '敷金' in label:
+                no_deposit = is_zero_fee(value)
+            elif '礼金' in label:
+                no_keymoney = is_zero_fee(value)
         lat, lng = geocode_address(area, station)
         results.append({'name': name, 'area': area, 'station': station, 'line': '',
                         'walk': walk, 'rentMin': rent_val or 0, 'rentMax': rent_val or 0,
                         'structure': structure, 'size': size,
                         'instrument': '24h演奏可', 'internet': '不明', 'url': href,
+                        'noDeposit': no_deposit, 'noKeyMoney': no_keymoney,
                         'source': 'Musicman不動産', 'lat': lat, 'lng': lng})
     print(f'[Musicman不動産] {len(results)}件')
     return results

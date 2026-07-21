@@ -66,6 +66,10 @@ header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em; }
 .filter-group input:focus, .filter-group select:focus { border-color: var(--brass); box-shadow: 0 0 0 3px rgba(160,118,40,0.14); }
 .filter-row { display: flex; gap: 8px; }
 .filter-row .filter-group { flex: 1; }
+.filter-check { display: flex; align-items: center; gap: 6px; flex: 1; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); font-size: 0.78rem; font-weight: 600; color: var(--ink); cursor: pointer; transition: border-color 0.15s ease; }
+.filter-check:hover { border-color: var(--brass); }
+.filter-check input { width: 15px; height: 15px; accent-color: var(--brass-deep); cursor: pointer; }
+.tag-fee { background: var(--brass-tint); color: var(--brass-deep); }
 .filter-actions { display: flex; gap: 6px; margin-top: 10px; }
 .btn { padding: 8px 14px; border: none; border-radius: 6px; font-size: 0.83rem; font-family: inherit; font-weight: 700; cursor: pointer; transition: background-color 0.15s ease, transform 0.08s ease; }
 .btn:active { transform: translateY(1px); }
@@ -198,16 +202,17 @@ header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em; }
   header h1 { font-size: 1rem; }
   .header-right .sp-hide { display: none; }
   .sources { display: none; }
-  .layout { flex-direction: column; }
+  .layout { flex-direction: column; height: auto; min-height: 0; }
   .right-panel { order: 1; height: 45vh; flex-shrink: 0; }
   #map { height: 100%; }
-  .left-panel { order: 2; width: 100%; min-width: 0; flex: 1; overflow: hidden; }
+  .left-panel { order: 2; width: 100%; min-width: 0; flex: none; overflow: visible; }
   .filters { padding: 8px 12px; }
   .filters h2 { font-size: 0.72rem; margin-bottom: 6px; }
   .filter-group label { font-size: 0.68rem; }
   .filter-group input, .filter-group select { padding: 5px 8px; font-size: 0.78rem; }
+  .filter-check { font-size: 0.74rem; padding: 6px 8px; }
   .btn { padding: 7px 10px; font-size: 0.78rem; }
-  .property-list { flex: 1; overflow-y: auto; }
+  .property-list { flex: none; overflow-y: visible; }
   .property-card { padding: 8px 10px; margin-bottom: 6px; }
   .card-name { font-size: 0.82rem; }
   .card-meta { font-size: 0.7rem; }
@@ -281,6 +286,10 @@ header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em; }
             <option value="相談可">相談可</option>
           </select>
         </div>
+      </div>
+      <div class="filter-row">
+        <label class="filter-check"><input type="checkbox" id="noDeposit"> 敷金なし</label>
+        <label class="filter-check"><input type="checkbox" id="noKeyMoney"> 礼金なし</label>
       </div>
       <div class="filter-actions">
         <button class="btn btn-search" id="searchBtn" onclick="doSearch()">検索する</button>
@@ -451,6 +460,8 @@ async function doSearch() {
   const rentMaxV   = parseFloat(document.getElementById('rentMax').value);
   const structure  = document.getElementById('structure').value;
   const instrument = document.getElementById('instrument').value;
+  const noDeposit  = document.getElementById('noDeposit').checked;
+  const noKeyMoney = document.getElementById('noKeyMoney').checked;
 
   showLoading();
   document.getElementById('searchBtn').disabled = true;
@@ -484,6 +495,8 @@ async function doSearch() {
       const m = { '24h': '24h演奏可', '楽器可': '楽器可', '相談可': '相談可' };
       if (m[instrument] && p.instrument !== m[instrument]) return false;
     }
+    if (noDeposit && !p.noDeposit) return false;
+    if (noKeyMoney && !p.noKeyMoney) return false;
     return true;
   });
 
@@ -580,6 +593,8 @@ function renderList(center) {
     const st   = (p.structure||'').includes('SRC') ? 'tag-src' : 'tag-rc';
     const net  = p.internet === '無料' ? '<span class="tag tag-net">📶 ネット無料</span>' : '';
     const size = p.size ? `<span class="tag">📐 ${p.size}</span>` : '';
+    const noDep = p.noDeposit ? '<span class="tag tag-fee">敷金なし</span>' : '';
+    const noKey = p.noKeyMoney ? '<span class="tag tag-fee">礼金なし</span>' : '';
     const hasPin = (p.lat && p.lng) ? '<span style="color:#1a7f4a;font-size:0.7rem;margin-right:3px" title="地図にピンあり">📍</span>' : '';
     const rentTxt = fmtRent(p.rentMin, p.rentMax);
     let transitRow = '';
@@ -605,7 +620,7 @@ function renderList(center) {
       <div class="card-meta">🚉 ${p.line ? p.line + ' ' : ''}${p.station}${p.walk ? ' 徒歩'+p.walk+'分' : ''}　${p.area}</div>
       ${transitRow}
       <div class="card-rent">${rentTxt}</div>
-      <div class="card-tags"><span class="tag ${st}">${p.structure||'RC造'}</span>${size}${net}</div>
+      <div class="card-tags"><span class="tag ${st}">${p.structure||'RC造'}</span>${size}${net}${noDep}${noKey}</div>
       <div class="card-footer"><span class="card-source">via ${p.source}</span><a href="${p.url}" target="_blank" rel="noopener" class="btn-detail" onclick="event.stopPropagation()">物件詳細を見る →</a></div>
     </div>`;
   }).join('');
@@ -705,6 +720,7 @@ function onCard(uid) {
 function resetAll() {
   ['keyword','rentMin','rentMax'].forEach(id => document.getElementById(id).value = '');
   ['structure','instrument'].forEach(id => document.getElementById(id).value = '');
+  ['noDeposit','noKeyMoney'].forEach(id => document.getElementById(id).checked = false);
   currentProperties = [];
   markerLayer.clearLayers();
   markers = {};
@@ -740,8 +756,8 @@ function toggleFullscreen() {
 
 // ── CSV エクスポート ──
 function exportCSV() {
-  const h = ['物件名','エリア','路線','最寄り駅','徒歩(分)','家賃下限(円)','家賃上限(円)','構造','面積','楽器条件','インターネット','情報源','物件URL'];
-  const rows = currentProperties.map(p => [p.name,p.area,p.line||'',p.station,p.walk,p.rentMin,p.rentMax,p.structure||'',p.size||'',p.instrument,p.internet,p.source,p.url]);
+  const h = ['物件名','エリア','路線','最寄り駅','徒歩(分)','家賃下限(円)','家賃上限(円)','構造','面積','楽器条件','敷金なし','礼金なし','インターネット','情報源','物件URL'];
+  const rows = currentProperties.map(p => [p.name,p.area,p.line||'',p.station,p.walk,p.rentMin,p.rentMax,p.structure||'',p.size||'',p.instrument,p.noDeposit?'○':'',p.noKeyMoney?'○':'',p.internet,p.source,p.url]);
   const csv = '﻿' + [h, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
