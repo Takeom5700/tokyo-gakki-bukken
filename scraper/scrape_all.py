@@ -26,8 +26,25 @@ SESSION.mount('http://', adapter)
 SESSION.mount('https://', adapter)
 
 _geo_cache = {}
+GEO_CACHE_PATH = os.path.join('data', 'geocode_cache.json')
 KANTO_BOUNDS = (34.5, 36.8, 138.5, 140.9)
 _geo_last = [0.0]
+
+def load_geo_cache():
+    global _geo_cache
+    try:
+        with open(GEO_CACHE_PATH, encoding='utf-8') as f:
+            raw = json.load(f)
+        _geo_cache = {k: (tuple(v) if v else (None, None)) for k, v in raw.items()}
+        print(f'[GEOCACHE] {len(_geo_cache)}件のキャッシュを読み込みました')
+    except Exception:
+        _geo_cache = {}
+
+def save_geo_cache():
+    os.makedirs('data', exist_ok=True)
+    with open(GEO_CACHE_PATH, 'w', encoding='utf-8') as f:
+        json.dump(_geo_cache, f, ensure_ascii=False)
+    print(f'[GEOCACHE] {len(_geo_cache)}件のキャッシュを保存しました')
 
 def _in_kanto(lat, lon):
     return KANTO_BOUNDS[0] <= lat <= KANTO_BOUNDS[1] and KANTO_BOUNDS[2] <= lon <= KANTO_BOUNDS[3]
@@ -146,13 +163,17 @@ SUUMO_BASE_RC = (
     "&shkr1=03&sngz=&pc=30"
 )
 SUUMO_BASE_SRC = SUUMO_BASE_RC.replace('shkr1=03', 'shkr1=04')
+SUUMO_MAX_PAGES = int(os.environ.get('SUUMO_MAX_PAGES', '50'))
 
-def _scrape_suumo_url(base_url, results):
-    r = safe_get(base_url)
+def _scrape_suumo_page(page_url, results):
+    r = safe_get(page_url)
     if not r:
-        return
+        return False
     soup = BeautifulSoup(r.text, 'lxml')
-    for item in soup.select('.cassetteitem'):
+    items = soup.select('.cassetteitem')
+    if not items:
+        return False
+    for item in items:
         name_el = item.select_one('.cassetteitem_content-title')
         name = name_el.text.strip() if name_el else ''
         if not name:
@@ -188,7 +209,7 @@ def _scrape_suumo_url(base_url, results):
             no_deposit = is_zero_fee(fee_parts[0] if len(fee_parts) > 0 else '')
             no_keymoney = is_zero_fee(fee_parts[1] if len(fee_parts) > 1 else '')
             link = row.select_one('a[href*="/chintai/"]')
-            url = ('https://suumo.jp' + link['href']) if link and not link['href'].startswith('http') else (link['href'] if link else base_url)
+            url = ('https://suumo.jp' + link['href']) if link and not link['href'].startswith('http') else (link['href'] if link else page_url)
             lat, lng = geocode_address(area, station)
             results.append({'name': name, 'area': area, 'station': station, 'line': line,
                             'walk': walk, 'rentMin': rent_val, 'rentMax': rent_val,
@@ -196,11 +217,22 @@ def _scrape_suumo_url(base_url, results):
                             'instrument': ins, 'internet': '不明', 'url': url,
                             'noDeposit': no_deposit, 'noKeyMoney': no_keymoney,
                             'source': 'SUUMO', 'lat': lat, 'lng': lng})
+    return True
+
+def _scrape_suumo_all_pages(base_url, results, label):
+    for page in range(1, SUUMO_MAX_PAGES + 1):
+        page_url = base_url + f'&page={page}'
+        before = len(results)
+        got_items = _scrape_suumo_page(page_url, results)
+        if not got_items:
+            break
+        print(f'[SUUMO:{label}] page {page}/{SUUMO_MAX_PAGES} 累計{len(results)}件（+{len(results)-before}）')
+        time.sleep(0.4)
 
 def scrape_suumo():
     results = []
-    _scrape_suumo_url(SUUMO_BASE_RC, results)
-    _scrape_suumo_url(SUUMO_BASE_SRC, results)
+    _scrape_suumo_all_pages(SUUMO_BASE_RC, results, 'RC')
+    _scrape_suumo_all_pages(SUUMO_BASE_SRC, results, 'SRC')
     print(f'[SUUMO] {len(results)}件')
     return results
 
@@ -223,7 +255,7 @@ def scrape_musision():
             if not href.startswith('http'):
                 href = 'https://www.musision.jp' + href
             prop_links.append(href)
-    for href in prop_links[:8]:
+    for href in prop_links[:60]:
         time.sleep(0.5)
         detail = safe_get(href)
         if not detail:
@@ -283,7 +315,7 @@ def scrape_bouon():
             if not href.startswith('http'):
                 href = 'https://www.bouonchintai.com' + href
             prop_links.append(href)
-    for href in prop_links[:8]:
+    for href in prop_links[:60]:
         time.sleep(0.5)
         detail = safe_get(href)
         if not detail:
@@ -354,7 +386,7 @@ def scrape_musicman():
             if not href.startswith('http'):
                 href = MUSICMAN_BASE + href
             prop_links.append(href)
-    for href in prop_links[:8]:
+    for href in prop_links[:60]:
         time.sleep(0.5)
         detail = safe_get(href)
         if not detail:
@@ -405,6 +437,8 @@ def scrape_musicman():
 # メイン
 # ──────────────────────────────────────────────
 def main():
+    load_geo_cache()
+
     all_results = []
     for name, fn in [('SUUMO', scrape_suumo), ('ミュージション', scrape_musision),
                      ('防音賃貸.com', scrape_bouon), ('Musicman不動産', scrape_musicman)]:
@@ -414,6 +448,7 @@ def main():
         except Exception as e:
             print(f'[ERROR] {name}: {e}')
         gc.collect()
+        save_geo_cache()
 
     # 重複除去
     seen = set(); unique = []
