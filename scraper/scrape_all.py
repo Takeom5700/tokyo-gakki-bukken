@@ -123,9 +123,9 @@ def geocode_address(address, station_name=''):
         _geo_cache[key2] = (None, None)
     return None, None
 
-def safe_get(url, timeout=10):
+def safe_get(url, timeout=10, params=None):
     try:
-        r = SESSION.get(url, timeout=timeout)
+        r = SESSION.get(url, params=params, timeout=timeout)
         r.raise_for_status()
         r.encoding = r.apparent_encoding
         return r
@@ -133,7 +133,7 @@ def safe_get(url, timeout=10):
         print(f'[WARN] GET {url} -> {e}')
         return None
 
-ZERO_FEE_TOKENS = {'-', 'ー', '−', '無', '無し', 'なし', '0', '0円', '0ヶ月'}
+ZERO_FEE_TOKENS = {'-', 'ー', '−', '－', '無', '無し', 'なし', '0', '0円', '0ヶ月'}
 
 def is_zero_fee(text):
     return (text or '').strip() in ZERO_FEE_TOKENS
@@ -434,6 +434,135 @@ def scrape_musicman():
     return results
 
 # ──────────────────────────────────────────────
+# 賃貸スモッカ
+# ──────────────────────────────────────────────
+SMOCCA_MAX_PAGES = int(os.environ.get('SMOCCA_MAX_PAGES', '10'))
+# 楽器相談=conditions:128（相談可）, 防音室=other_conditions:262144（楽器可寄りの強い条件）
+SMOCCA_COND_GROUPS = [('cond[conditions][]', '128', '相談可'), ('cond[other_conditions][]', '262144', '楽器可')]
+
+def _scrape_smocca_cond(param_name, value, ins_label, results, label):
+    for page in range(1, SMOCCA_MAX_PAGES + 1):
+        params = {'prefecture_path': 'tokyo', param_name: value}
+        if page > 1:
+            params['page'] = page
+        r = safe_get('https://smocca.jp/search/results', params=params)
+        if not r:
+            break
+        soup = BeautifulSoup(r.text, 'lxml')
+        cards = soup.select('div.item_list02.bukken')
+        if not cards:
+            break
+        for c in cards:
+            title_el = c.select_one('.item_list02_title a')
+            name = title_el.text.strip() if title_el else ''
+            link = title_el
+            if not name or not link:
+                continue
+            url = link.get('href', '')
+            rows = c.select('.item_hasicon p.d_table_fixed')
+            area = ''; station = ''; walk = 0; rent_val = None
+            for row in rows:
+                icon = row.select_one('i')
+                cls = ' '.join(icon.get('class', [])) if icon else ''
+                cell = row.select('.d_table_cell')
+                val = cell[-1].get_text(' ', strip=True) if cell else ''
+                if 'address' in cls:
+                    area = val
+                elif 'train' in cls:
+                    sm = re.search(r'(\S+?)\s*徒歩(\d+)分', val)
+                    if sm:
+                        station = sm.group(1)
+                        walk = int(sm.group(2))
+                elif 'price' in cls:
+                    rent_val = parse_rent(val)
+            if not area:
+                continue
+            lat, lng = geocode_address(area, station)
+            results.append({'name': name, 'area': area, 'station': station, 'line': '',
+                            'walk': walk, 'rentMin': rent_val or 0, 'rentMax': rent_val or 0,
+                            'structure': 'RC造', 'size': '',
+                            'instrument': ins_label, 'internet': '不明', 'url': url,
+                            'noDeposit': False, 'noKeyMoney': False,
+                            'source': '賃貸スモッカ', 'lat': lat, 'lng': lng})
+        print(f'[スモッカ:{label}] page {page}/{SMOCCA_MAX_PAGES} 累計{len(results)}件')
+        time.sleep(0.4)
+
+def scrape_smocca():
+    results = []
+    for param_name, value, ins_label in SMOCCA_COND_GROUPS:
+        _scrape_smocca_cond(param_name, value, ins_label, results, param_name)
+    print(f'[スモッカ] {len(results)}件')
+    return results
+
+# ──────────────────────────────────────────────
+# アパマンショップ
+# ──────────────────────────────────────────────
+# 東京23区+多摩地域の市区町村コード（/tokyo/ トップページの区市町村一覧から取得）
+APAMAN_TOKYO_WARDS = [
+    '101','102','103','104','105','106','107','108','109','110','111','112','113',
+    '114','115','116','117','118','119','120','121','122','123',
+    '201','202','203','204','205','206','207','208','209','210','211','212','213',
+    '214','215','218','219','220','221','222','223','224','225','227','228','229',
+    '303','305',
+]
+APAMAN_STRUCTURE_MAP = [('鉄骨鉄筋コンクリート', 'SRC造'), ('鉄筋コンクリート', 'RC造')]
+
+def _apaman_structure(text):
+    for jp, code in APAMAN_STRUCTURE_MAP:
+        if jp in text:
+            return code
+    return 'RC造'
+
+def scrape_apamanshop():
+    results = []
+    for ward in APAMAN_TOKYO_WARDS:
+        r = safe_get(f'https://www.apamanshop.com/tokyo/{ward}/kodawari/7/')
+        if not r:
+            continue
+        soup = BeautifulSoup(r.text, 'lxml')
+        cards = soup.select('article.mod_box_section_bdt')
+        for c in cards:
+            name_el = c.select_one('.name')
+            name = name_el.text.strip() if name_el else ''
+            if not name:
+                continue
+            info_text = c.select_one('.info').get_text(' ', strip=True) if c.select_one('.info') else ''
+            structure = _apaman_structure(info_text)
+            area_el = c.select_one('.address')
+            area = area_el.text.strip() if area_el else ''
+            station = ''; walk = 0
+            li = c.select_one('.list_info li')
+            if li:
+                sm = re.search(r'(\S+駅)/徒歩(\d+)分', li.get_text(' ', strip=True))
+                if sm:
+                    station = sm.group(1); walk = int(sm.group(2))
+            for row in c.select('tr.tr_mid'):
+                tds = row.select('td')
+                if len(tds) < 5:
+                    continue
+                price_el = row.select_one('.chinryo p')
+                rent_val = parse_rent(price_el.get_text(' ', strip=True)) if price_el else None
+                if not rent_val:
+                    continue
+                fee_ps = tds[3].select('p')
+                no_deposit = is_zero_fee(fee_ps[0].text if len(fee_ps) > 0 else '')
+                no_keymoney = is_zero_fee(fee_ps[1].text if len(fee_ps) > 1 else '')
+                size_ps = tds[4].select('p')
+                size = size_ps[1].text.strip() if len(size_ps) > 1 else ''
+                detail_link = row.select_one('a.text_b, a[href*="/tokyo/"]')
+                url = ('https://www.apamanshop.com' + detail_link['href']) if detail_link and not detail_link['href'].startswith('http') else (detail_link['href'] if detail_link else r.url)
+                lat, lng = geocode_address(area, station)
+                results.append({'name': name, 'area': area, 'station': station, 'line': '',
+                                'walk': walk, 'rentMin': rent_val, 'rentMax': rent_val,
+                                'structure': structure, 'size': size,
+                                'instrument': '相談可', 'internet': '不明', 'url': url,
+                                'noDeposit': no_deposit, 'noKeyMoney': no_keymoney,
+                                'source': 'アパマンショップ', 'lat': lat, 'lng': lng})
+        time.sleep(0.4)
+    print(f'[アパマンショップ] {len(results)}件')
+    return results
+
+# ──────────────────────────────────────────────
 # メイン
 # ──────────────────────────────────────────────
 def main():
@@ -441,7 +570,8 @@ def main():
 
     all_results = []
     for name, fn in [('SUUMO', scrape_suumo), ('ミュージション', scrape_musision),
-                     ('防音賃貸.com', scrape_bouon), ('Musicman不動産', scrape_musicman)]:
+                     ('防音賃貸.com', scrape_bouon), ('Musicman不動産', scrape_musicman),
+                     ('賃貸スモッカ', scrape_smocca), ('アパマンショップ', scrape_apamanshop)]:
         try:
             res = fn()
             all_results.extend(res)
@@ -450,10 +580,11 @@ def main():
         gc.collect()
         save_geo_cache()
 
-    # 重複除去
+    # 重複除去（同一URLの再掲のみ束ねる。name/stationだけだと「◯◯の賃貸マンション」等の
+    # 自動生成名を持つ別物件（賃貸スモッカ等）が誤って一つに潰れてしまうためURLも鍵に含める）
     seen = set(); unique = []
     for p in all_results:
-        key = (p['name'].strip(), p['station'].strip())
+        key = (p['name'].strip(), p['station'].strip(), p['url'].split('?')[0])
         if key not in seen:
             seen.add(key)
             unique.append(p)
